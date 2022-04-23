@@ -1,0 +1,132 @@
+package jitrs.links
+
+import jitrs.links.tablegen.generateTable
+import jitrs.links.util.ArrayIterator
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+
+/**
+ * Generate table for grammar in
+ * https://en.wikipedia.org/wiki/LR_parser#Grammar_for_the_example_A*2_+_1
+ */
+internal class ParserTest {
+    @Test
+    fun testParse() {
+        val scheme = getScheme()
+        val rules = getRules(scheme)
+        val table = generateTable(scheme, rules)
+
+        val actual = parenthesize(scheme, rules, table, "10 + 20 * 30 + 40")
+        assertEquals("((10 + (20 * 30)) + 40)", actual)
+    }
+
+    private fun getScheme() = Scheme(SymbolArray(
+        arrayOf("<int>", "<id>", "*", "+", "<eof>"),
+        arrayOf("Goal", "Sums", "Products", "Value")
+    ))
+
+    private fun getRules(scheme: Scheme) = metaParse(
+        scheme,
+        """
+    Goal -> Sums <eof>
+    Sums -> Sums + Products
+    Sums -> Products
+    Products -> Products * Value
+    Products -> Value
+    Value -> <int>
+    Value -> <id>
+"""
+    )
+}
+
+fun parenthesize(scheme: Scheme, rules: Rules, table:Table, string: String): String {
+    val tokens0 = tokenize(scheme, string) { false }
+    val tokens = ArrayIterator(tokens0)
+
+    return cstToAst(parse(table, rules, tokens, true)).toString()
+}
+
+fun cstToAst(cst: Cst): Ast = when (cst) {
+    is Cst.Leaf -> when (val data = cst.token.data) {
+        is Token.Data.IntToken -> Ast.Num(data.data)
+        is Token.Data.IdentToken -> Ast.Ident(data.data)
+        else -> throw RuntimeException()
+    }
+    is Cst.Node -> {
+        if (cst.children.size > 1) {
+            val ch = when ((cst.children[1] as? Cst.Leaf)?.token?.id) {
+                2 -> '*'
+                3 -> '+'
+                else -> throw RuntimeException()
+            }
+            Ast.Binop(ch, cstToAst(cst.children[0]), cstToAst(cst.children[2]))
+        } else {
+            cstToAst(cst.children[0])
+        }
+    }
+}
+
+sealed class Ast {
+    data class Num(val num: Int) : Ast() {
+        override fun toString(): String = num.toString()
+    }
+
+    data class Ident(val s: String) : Ast() {
+        override fun toString(): String = s
+    }
+
+    data class Binop(
+        val op: Char,
+        val e1: Ast,
+        val e2: Ast,
+    ) : Ast() {
+        override fun toString(): String = "($e1 $op $e2)"
+    }
+}
+
+
+// table and scheme for https://en.wikipedia.org/wiki/LR_parser#Parse_table_for_the_example_grammar
+//fun getExampleTable(): Table = Table(
+//    arrayOf(
+//        Row(
+//            arrayOf(Action.Shift(8), Action.Shift(9), Action.Error, Action.Error, Action.Error),
+//            arrayOf(-1, 1, 4, 7)
+//        ),
+//        Row(
+//            arrayOf(Action.Error, Action.Error, Action.Error, Action.Shift(2), Action.Done),
+//            arrayOf(-1, -1, -1, -1)
+//        ),
+//        Row(
+//            arrayOf(Action.Shift(8), Action.Shift(9), Action.Error, Action.Error, Action.Error),
+//            arrayOf(-1, -1, 3, 7)
+//        ),
+//        Row(
+//            arrayOf(Action.Error, Action.Error, Action.Shift(5), Action.Reduce(1), Action.Reduce(1)),
+//            arrayOf(-1, -1, -1, -1)
+//        ),
+//        Row(
+//            arrayOf(Action.Error, Action.Error, Action.Shift(5), Action.Reduce(2), Action.Reduce(2)),
+//            arrayOf(-1, -1, -1, -1)
+//        ),
+//        Row(
+//            arrayOf(Action.Shift(8), Action.Shift(9), Action.Error, Action.Error, Action.Error),
+//            arrayOf(-1, -1, -1, 6)
+//        ),
+//        Row(
+//            arrayOf(Action.Error, Action.Error, Action.Reduce(3), Action.Reduce(3), Action.Reduce(3)),
+//            arrayOf(-1, -1, -1, -1)
+//        ),
+//        Row(
+//            arrayOf(Action.Error, Action.Error, Action.Reduce(4), Action.Reduce(4), Action.Reduce(4)),
+//            arrayOf(-1, -1, -1, -1)
+//        ),
+//        Row(
+//            arrayOf(Action.Error, Action.Error, Action.Reduce(5), Action.Reduce(5), Action.Reduce(5)),
+//            arrayOf(-1, -1, -1, -1)
+//        ),
+//        Row(
+//            arrayOf(Action.Error, Action.Error, Action.Reduce(6), Action.Reduce(6), Action.Reduce(6)),
+//            arrayOf(-1, -1, -1, -1)
+//        ),
+//    )
+//)
