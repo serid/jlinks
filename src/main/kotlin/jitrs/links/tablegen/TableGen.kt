@@ -20,7 +20,7 @@ fun generateTable(scheme: Scheme, rules: Rules): Table {
     while (queue.isNotEmpty()) {
         val sourceSet = queue.removeFirst()
 
-        var reductionRuleId: RuleId = -1
+        val reductionRuleIds = ArrayList<RuleId>()
         var endsInEof = false
 
         val reachableSets = scheme.map.newOf<MutableItemSet> { mutableSetOf() }
@@ -38,10 +38,7 @@ fun generateTable(scheme: Scheme, rules: Rules): Table {
             val set = when (nextSymbol) {
                 null -> {
                     // Infer reduction actions and continue
-                    if (reductionRuleId == -1)
-                        reductionRuleId = item.ruleId
-                    else
-                        throw RuntimeException("Reduce-reduce conflict")
+                    reductionRuleIds.add(item.ruleId)
 
                     continue
                 }
@@ -61,7 +58,7 @@ fun generateTable(scheme: Scheme, rules: Rules): Table {
                 visitedSets = visitedSets,
                 newStateId = rows.size,
                 reachableSets = reachableSets,
-                reductionRuleId = reductionRuleId,
+                reductionRuleIds = reductionRuleIds,
                 endsInEof = endsInEof,
                 queue = queue,
             )
@@ -85,7 +82,7 @@ fun computeRow(
     // Info specific to an item set
     newStateId: StateId,
     reachableSets: SymbolArray<MutableItemSet>,
-    reductionRuleId: RuleId,
+    reductionRuleIds: ArrayList<RuleId>,
     endsInEof: Boolean,
 
     // Is mutated
@@ -114,19 +111,22 @@ fun computeRow(
     val goto = Array<StateId>(scheme.map.nonTerminals.size) { -1 }
     val actions = Array<Action>(scheme.map.terminals.size) { Action.Error }
 
-    loop(reachableSets.terminals) { id, targetState -> actions[id] = Action.Shift(targetState) }
+    loop(reachableSets.terminals) { id, targetState -> actions[id] = Action.Just(StackAction.Shift(targetState)) }
     loop(reachableSets.nonTerminals) { id, targetState -> goto[id] = targetState }
 
     // Place reduction actions
-    if (reductionRuleId != -1)
-        for (id in actions.indices)
-            // Use follow map to determine whether the reduction should be placed
-            if (mustBeAdded(rules, follow, reductionRuleId, id))
-                when (actions[id]) {
-                    Action.Error -> actions[id] = Action.Reduce(reductionRuleId)
-                    is Action.Shift -> throw RuntimeException("Shift-reduce conflict")
+    for (id in actions.indices)
+        // Use follow map to determine whether the reduction should be placed
+        for (ruleId in reductionRuleIds)
+            if (mustBeAdded(rules, follow, ruleId, id)) {
+                val newStackAction = StackAction.Reduce(ruleId)
+                when (val targetAction = actions[id]) {
+                    is Action.Error -> actions[id] = Action.Just(newStackAction)
+                    is Action.Just -> actions[id] = Action.Fork(arrayOf(targetAction.action, newStackAction))
+                    is Action.Fork -> actions[id] = Action.Fork(targetAction.actions + newStackAction)
                     else -> throw RuntimeException("Otheraction-reduce conflict")
                 }
+            }
 
     // Place action for eof
     if (endsInEof) actions[eofSpecialId] = Action.Done

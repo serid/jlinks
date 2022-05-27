@@ -19,10 +19,9 @@ internal class GeneralizedParserTest {
         val tokens0 = tokenize(scheme, "b e c") { false }
         val tokens = ArrayIterator(tokens0)
 
-        // TODO: implement generalized parsing with fork
         val cst = parse(table, rules, tokens, true)
 
-        assertEquals( "E[E[E[B[0]],+,B[1]],*,B[0]]", cst.toString(scheme))
+        assertEquals( "A[b,F[e],c]", cst.toString(scheme))
     }
 
     private fun getScheme() = Scheme(

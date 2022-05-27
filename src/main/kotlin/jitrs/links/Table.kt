@@ -60,17 +60,26 @@ data class Row(
 }
 
 sealed class Action {
-    data class Shift(val state: StateId) : Action() {
-        override fun toString(): String = "s$state"
+    data class Just(val action: StackAction) : Action() {
+        override fun toString(): String = action.toString()
     }
-    data class Reduce(val id: RuleId) : Action() {
-        override fun toString(): String = "r$id"
+    data class Fork(val actions: Array<StackAction>) : Action() {
+        override fun toString(): String = actions.contentToString()
     }
     object Error : Action() {
         override fun toString(): String = "__"
     }
     object Done : Action() {
         override fun toString(): String = "Done"
+    }
+}
+
+sealed class StackAction {
+    data class Shift(val state: StateId) : StackAction() {
+        override fun toString(): String = "s$state"
+    }
+    data class Reduce(val id: RuleId) : StackAction() {
+        override fun toString(): String = "r$id"
     }
 }
 

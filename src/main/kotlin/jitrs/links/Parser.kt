@@ -9,17 +9,20 @@ fun parse(table: Table, rules: Rules, tokens: ArrayIterator<Token>, debug: Boole
         PProcess(table, rules, tokens, debug)
     )
 
+    val newProcesses = ArrayList<PProcess>()
+
     outer@ while (true) {
         val iterator = processes.iterator()
-        for (process in iterator) {
-            val isDone = process.step()
-
-            when (isDone) {
-                is StepResult.Pending -> {}
+        for (process in iterator)
+            when (val isDone = process.step(newProcesses)) {
+                is StepResult.Pending -> {
+                }
                 is StepResult.Error -> iterator.remove()
                 is StepResult.Done -> return isDone.result
             }
-        }
+
+        processes.addAll(newProcesses)
+        newProcesses.clear()
     }
 }
 
@@ -54,16 +57,49 @@ class PProcess private constructor(
     /**
      * @return concrete syntax tree or `null` if more steps are needed
      */
-    fun step(): StepResult =
+    fun step(newProcesses: ArrayList<PProcess>): StepResult =
         when (val action = this.table.map[this.stateStack.last()].action[this.lookahead.id]) {
-            is Action.Shift -> {
+            is Action.Just -> {
+                this.invokeStackAction(action.action)
+                StepResult.Pending
+            }
+            is Action.Fork -> {
+                // Skip first action, fork a process for each remaining action and invoke the action there
+                for (i in 1 until action.actions.size) {
+                    val newPProcess = this.fork()
+                    newPProcess.invokeStackAction(action.actions[i])
+                    newProcesses.add(newPProcess)
+                }
+
+                // Invoke first stack action in this process
+                this.invokeStackAction(action.actions[0])
+
+                StepResult.Pending
+            }
+            is Action.Error -> {
+                // TODO: when all processes fail, program should report an error
+                StepResult.Error
+            }
+            is Action.Done -> {
+                this.stateStack.removeLast()
+
+                myAssert(debug, stateStack.size == 1)
+                myAssert(debug, stateStack.last() == 0)
+                myAssert(debug, cstStack.size == 1)
+                StepResult.Done(this.cstStack.last())
+            }
+        }
+
+    private fun invokeStackAction(stackAction: StackAction) {
+        when (stackAction) {
+            is StackAction.Shift -> {
                 this.cstStack.add(Cst.Leaf(this.lookahead))
-                this.stateStack.add(action.state)
+                this.stateStack.add(stackAction.state)
                 this.lookahead = this.tokens.next()
                 StepResult.Pending
             }
-            is Action.Reduce -> {
-                val rule = rules[action.id]
+            is StackAction.Reduce -> {
+                val rule = rules[stackAction.id]
                 val lhsId = rule.lhs
                 val rhsLength = rule.rhs.size
 
@@ -93,25 +129,18 @@ class PProcess private constructor(
                 this.stateStack.add(nextState)
                 StepResult.Pending
             }
-            is Action.Error -> throw RuntimeException()
-            is Action.Done -> {
-                this.stateStack.removeLast()
-
-                myAssert(debug, stateStack.size == 1)
-                myAssert(debug, stateStack.last() == 0)
-                myAssert(debug, cstStack.size == 1)
-                StepResult.Done(this.cstStack.last())
-            }
         }
+    }
 
+    @Suppress("UNCHECKED_CAST")
     private fun fork(): PProcess = PProcess(
         table,
         rules,
         tokens.clone(),
         debug,
         lookahead,
-        cstStack,
-        stateStack
+        cstStack.clone() as ArrayList<Cst>,
+        stateStack.clone() as ArrayList<StateId>
     )
 }
 
