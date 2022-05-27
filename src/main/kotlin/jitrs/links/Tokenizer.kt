@@ -78,6 +78,12 @@ fun tokenize(scheme: Scheme, string: String, identCharacterPredicate: (Char) -> 
 data class Scheme(
     val map: SymbolArray<String>
 ) {
+    init {
+        // Sort terminals in order of decreasing length
+        // Without sorting, tokenization of "integer" in language ("int", "integer") yields Token(INT) and tail "eger"
+        map.terminals.sortWith { x, y -> x.length - y.length }
+    }
+
     val reverse: HashMap<String, Symbol> by lazy {
         val h = hashMapOf<String, Symbol>()
         for ((id, str) in map.terminals.withIndex()) h[str] = Symbol.Terminal(id)

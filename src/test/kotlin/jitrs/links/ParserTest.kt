@@ -43,10 +43,10 @@ fun parenthesize(scheme: Scheme, rules: Rules, table:Table, string: String): Str
     val tokens0 = tokenize(scheme, string) { false }
     val tokens = ArrayIterator(tokens0)
 
-    return cstToAst(parse(table, rules, tokens, true)).toString()
+    return cstToAst(scheme, parse(table, rules, tokens, true)).toString()
 }
 
-fun cstToAst(cst: Cst): Ast = when (cst) {
+fun cstToAst(scheme: Scheme, cst: Cst): Ast = when (cst) {
     is Cst.Leaf -> when (val data = cst.token.data) {
         is Token.Data.IntToken -> Ast.Num(data.data)
         is Token.Data.IdentToken -> Ast.Ident(data.data)
@@ -54,14 +54,11 @@ fun cstToAst(cst: Cst): Ast = when (cst) {
     }
     is Cst.Node -> {
         if (cst.children.size > 1) {
-            val ch = when ((cst.children[1] as? Cst.Leaf)?.token?.id) {
-                2 -> '*'
-                3 -> '+'
-                else -> throw RuntimeException()
-            }
-            Ast.Binop(ch, cstToAst(cst.children[0]), cstToAst(cst.children[2]))
+            val id = (cst.children[1] as? Cst.Leaf)?.token?.id!!
+            val ch = scheme.map.terminals[id][0]
+            Ast.Binop(ch, cstToAst(scheme, cst.children[0]), cstToAst(scheme, cst.children[2]))
         } else {
-            cstToAst(cst.children[0])
+            cstToAst(scheme, cst.children[0])
         }
     }
 }
