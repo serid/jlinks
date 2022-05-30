@@ -1,7 +1,7 @@
 package jitrs.links
 
 import jitrs.links.tablegen.generateTable
-import jitrs.links.util.ArrayIterator
+import jitrs.util.ArrayIterator
 
 class Grammar private constructor(
     private val scheme: Scheme,

@@ -1,4 +1,4 @@
-package jitrs.links.util
+package jitrs.util
 
 fun matchPrefix(string: String, from: Int, prefix: String): Boolean {
     if (string.length - from < prefix.length) return false

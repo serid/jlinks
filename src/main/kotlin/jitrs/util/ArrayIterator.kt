@@ -1,4 +1,4 @@
-package jitrs.links.util
+package jitrs.util
 
 class ArrayIterator<T>(private val array: Array<T>) : Iterator<T> {
     private constructor(array: Array<T>, i: Int) : this(array) {

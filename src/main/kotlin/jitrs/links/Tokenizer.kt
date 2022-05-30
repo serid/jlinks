@@ -1,7 +1,7 @@
 package jitrs.links
 
-import jitrs.links.util.UnreachableError
-import jitrs.links.util.matchPrefix
+import jitrs.util.UnreachableError
+import jitrs.util.matchPrefix
 
 // Terminals "<int>", "<id>", "<string>" and "<eof>" have special meaning for the tokenizer.
 // Use escape prefix $ to treat them as normal lexemes.

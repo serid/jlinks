@@ -1,6 +1,6 @@
-package jitrs.links.util
+package jitrs.util
 
-class UnreachableError : Error {
+class UnimplementedError : Error {
     constructor() : super()
 
     constructor(message: String) : super(message)

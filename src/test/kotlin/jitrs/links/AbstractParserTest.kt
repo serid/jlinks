@@ -1,8 +1,8 @@
 package jitrs.links
 
 import jitrs.links.tablegen.generateTable
-import jitrs.links.util.ArrayIterator
-import jitrs.links.util.myAssert
+import jitrs.util.ArrayIterator
+import jitrs.util.myAssert
 import kotlin.test.assertEquals
 
 internal abstract class AbstractParserTest {

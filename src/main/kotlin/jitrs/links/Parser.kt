@@ -1,7 +1,7 @@
 package jitrs.links
 
-import jitrs.links.util.ArrayIterator
-import jitrs.links.util.myAssert
+import jitrs.util.ArrayIterator
+import jitrs.util.myAssert
 
 /**
  * @param returnFirstParse GLR parser is capable of handling ambiguous grammars and returning multiple parse trees.

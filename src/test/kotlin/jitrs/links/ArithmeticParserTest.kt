@@ -1,7 +1,7 @@
 package jitrs.links
 
 import jitrs.links.tablegen.generateTable
-import jitrs.links.util.ArrayIterator
+import jitrs.util.ArrayIterator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
