@@ -16,7 +16,7 @@ internal class GeneralizedParserTest {
         val rules = getRules(scheme)
         val table = generateTable(scheme, rules)
 
-        val tokens0 = tokenize(scheme, "b e c") { false }
+        val tokens0 = tokenize(scheme.map.terminals, "b e c") { false }
         val tokens = ArrayIterator(tokens0)
 
         val cst = parse(table, rules, tokens, true)

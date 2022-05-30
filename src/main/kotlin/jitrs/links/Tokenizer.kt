@@ -3,7 +3,9 @@ package jitrs.links
 import jitrs.links.util.UnreachableError
 import jitrs.links.util.matchPrefix
 
-fun tokenize(scheme: Scheme, string: String, identCharacterPredicate: (Char) -> Boolean): Array<Token> {
+// Terminals "<int>", "<id>", "<string>" and "<eof>" have special meaning for the tokenizer.
+// Use escape prefix $ to treat them as normal lexemes.
+fun tokenize(terminals: Array<String>, string: String, identCharacterPredicate: (Char) -> Boolean): Array<Token> {
     // Split terminals into "lexemes" and "special"
     val lexemeTerminals0 = arrayListOf<Pair<TerminalId, String>>()
 
@@ -12,12 +14,12 @@ fun tokenize(scheme: Scheme, string: String, identCharacterPredicate: (Char) -> 
     var identSpecialId: TerminalId = -1
     var stringSpecialId: TerminalId = -1
     var eofSpecialId: TerminalId = -1
-    for ((i, str) in scheme.map.terminals.withIndex()) when (str) {
+    for ((i, str) in terminals.withIndex()) when (str) {
         "<int>" -> intSpecialId = i
         "<id>" -> identSpecialId = i
         "<string>" -> stringSpecialId = i
         "<eof>" -> eofSpecialId = i
-        else -> lexemeTerminals0.add(Pair(i, str))
+        else -> lexemeTerminals0.add(Pair(i, unEscapeTerminal(str)))
     }
     val lexemeTerminals = lexemeTerminals0.toTypedArray()
 
@@ -74,14 +76,22 @@ fun tokenize(scheme: Scheme, string: String, identCharacterPredicate: (Char) -> 
     return result.toTypedArray()
 }
 
+fun isSpecialTerminal(string: String) = when (string) {
+    "<int>", "<id>", "<string>", "<eof>" -> true
+    else -> false
+}
+
+fun escapeSpecialTerminal(string: String): String = if (isSpecialTerminal(string)) "$$string" else string
+
+fun unEscapeTerminal(string: String): String = string.removePrefix("$")
+
+
 // maps token ids to readable names
 data class Scheme(
     val map: SymbolArray<String>
 ) {
     init {
-        // Sort terminals in order of decreasing length
-        // Without sorting, tokenization of "integer" in language ("int", "integer") yields Token(INT) and tail "eger"
-        map.terminals.sortWith { x, y -> x.length - y.length }
+        sortTerminals(map.terminals)
     }
 
     val reverse: HashMap<String, Symbol> by lazy {
@@ -89,6 +99,12 @@ data class Scheme(
         for ((id, str) in map.terminals.withIndex()) h[str] = Symbol.Terminal(id)
         for ((id, str) in map.nonTerminals.withIndex()) h[str] = Symbol.NonTerminal(id)
         h
+    }
+
+    companion object {
+        // Sort terminals in order of decreasing length
+        // Without sorting, tokenization of "integer" in language ("int", "integer") yields Token(INT) and tail "eger"
+        fun sortTerminals(terminals: Array<String>): Unit = terminals.sortWith { x, y -> x.length - y.length }
     }
 }
 

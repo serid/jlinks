@@ -16,7 +16,7 @@ internal class TableGenTest {
         val rules = getRules(scheme)
         val table = generateTable(scheme, rules)
 
-        val tokens0 = tokenize(scheme, "0 + 1 * 0") { false }
+        val tokens0 = tokenize(scheme.map.terminals, "0 + 1 * 0") { false }
         val tokens = ArrayIterator(tokens0)
 
         val cst = parse(table, rules, tokens, true)
