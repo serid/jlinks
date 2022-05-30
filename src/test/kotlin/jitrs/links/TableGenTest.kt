@@ -21,7 +21,7 @@ internal class TableGenTest {
 
         val cst = parse(table, rules, tokens, true)
 
-        assertEquals( "E[E[E[B[0]],+,B[1]],*,B[0]]", cst.toString(scheme))
+        assertEquals("E[E[E[B[0]],+,B[1]],*,B[0]]", cst.toString(scheme))
     }
 
     private fun getScheme() = Scheme(

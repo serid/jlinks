@@ -35,7 +35,7 @@ fun metaParse(scheme: Scheme, string: String): Rules {
         i += " -> ".length
 
         // Read symbols
-        inner@while (true) {
+        inner@ while (true) {
             i = skipSpace(string, i)
             if (i >= string.length) break
 

@@ -21,7 +21,7 @@ internal class GeneralizedParserTest {
 
         val cst = parse(table, rules, tokens, true)
 
-        assertEquals( "A[b,F[e],c]", cst.toString(scheme))
+        assertEquals("A[b,F[e],c]", cst.toString(scheme))
     }
 
     private fun getScheme() = Scheme(

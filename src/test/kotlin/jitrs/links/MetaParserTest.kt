@@ -13,10 +13,12 @@ internal class MetaParserTest {
         assertContentEquals(expected, actual)
     }
 
-    private fun getScheme() = Scheme(SymbolArray(
-        arrayOf("*", "+", "0", "1", "<eof>"),
-        arrayOf("S", "E", "B")
-    ))
+    private fun getScheme() = Scheme(
+        SymbolArray(
+            arrayOf("*", "+", "0", "1", "<eof>"),
+            arrayOf("S", "E", "B")
+        )
+    )
 
     private fun getExpectedRules() = arrayOf(
         Rule(0, arrayOf(Symbol.NonTerminal(1), Symbol.Terminal(4))),

@@ -116,7 +116,7 @@ fun computeRow(
 
     // Place reduction actions
     for (id in actions.indices)
-        // Use follow map to determine whether the reduction should be placed
+    // Use follow map to determine whether the reduction should be placed
         for (ruleId in reductionRuleIds)
             if (mustBeAdded(rules, follow, ruleId, id)) {
                 val newStackAction = StackAction.Reduce(ruleId)

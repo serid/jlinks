@@ -20,10 +20,12 @@ internal class ParserTest {
         assertEquals("((10 + (20 * 30)) + 40)", actual)
     }
 
-    private fun getScheme() = Scheme(SymbolArray(
-        arrayOf("<int>", "<id>", "*", "+", "<eof>"),
-        arrayOf("Goal", "Sums", "Products", "Value")
-    ))
+    private fun getScheme() = Scheme(
+        SymbolArray(
+            arrayOf("<int>", "<id>", "*", "+", "<eof>"),
+            arrayOf("Goal", "Sums", "Products", "Value")
+        )
+    )
 
     private fun getRules(scheme: Scheme) = metaParse(
         scheme,
@@ -39,7 +41,7 @@ internal class ParserTest {
     )
 }
 
-fun parenthesize(scheme: Scheme, rules: Rules, table:Table, string: String): String {
+fun parenthesize(scheme: Scheme, rules: Rules, table: Table, string: String): String {
     val tokens0 = tokenize(scheme, string) { false }
     val tokens = ArrayIterator(tokens0)
 

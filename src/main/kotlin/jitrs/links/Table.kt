@@ -63,12 +63,15 @@ sealed class Action {
     data class Just(val action: StackAction) : Action() {
         override fun toString(): String = action.toString()
     }
+
     data class Fork(val actions: Array<StackAction>) : Action() {
         override fun toString(): String = actions.contentToString()
     }
+
     object Error : Action() {
         override fun toString(): String = "__"
     }
+
     object Done : Action() {
         override fun toString(): String = "Done"
     }
@@ -78,6 +81,7 @@ sealed class StackAction {
     data class Shift(val state: StateId) : StackAction() {
         override fun toString(): String = "s$state"
     }
+
     data class Reduce(val id: RuleId) : StackAction() {
         override fun toString(): String = "r$id"
     }
@@ -137,7 +141,8 @@ data class SymbolArray<T>(
 
     fun iter(): Sequence<Pair<Symbol, T>> {
         val terminals = this.terminals.asSequence().withIndex().map { (id, term) -> Pair(Symbol.Terminal(id), term) }
-        val nonTerminals = this.nonTerminals.asSequence().withIndex().map { (id, term) -> Pair(Symbol.NonTerminal(id), term) }
+        val nonTerminals =
+            this.nonTerminals.asSequence().withIndex().map { (id, term) -> Pair(Symbol.NonTerminal(id), term) }
         return terminals.plus(nonTerminals)
     }
 }
