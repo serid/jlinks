@@ -1,62 +1,90 @@
 package jitrs.links
 
-import jitrs.links.util.ArrayIterator
-import jitrs.links.util.matchPrefix
-
 /**
  * Parse a string into an array of parsing rules
  */
 fun metaParse(scheme: Scheme, string: String): Rules {
-    val symbolIterator = ArrayIterator(scheme.map.iter().toList().toTypedArray())
+    // Build a language with terminals required for parsing rules
+    // In this language what was nonterminals is treated as terminals
+    val terminalNonTerminals = scheme.map.nonTerminals.asSequence()
+    val language = scheme.map.terminals.asSequence()
+        .map(::escapeSpecialTerminal)
+        .plus(sequenceOf("->", "\n", "<eof>"))
+        .plus(terminalNonTerminals)
+        .toList().toTypedArray()
+
+    Scheme.sortTerminals(language)
+
+    val arrowId: TerminalId = language.indexOf("->")
+    val newLineId: TerminalId = language.indexOf("\n")
+    val metaEofId: TerminalId = language.indexOf("<eof>")
+    // Not to be confused with escaped "$<eof>" already present in scheme
+
+    // Maps terminals in new language into symbols of original scheme
+    val backMap = Array<Symbol?>(language.size) { null }
+    for ((id, lex) in language.withIndex()) {
+        val unescaped = unEscapeTerminal(lex)
+
+        fun f(array: Array<String>, f: (Int) -> Symbol) {
+            val schemeId = array.indexOf(unescaped)
+            if (schemeId != -1)
+                backMap[id] = f(schemeId)
+        }
+
+        f(scheme.map.terminals, Symbol::Terminal)
+        f(scheme.map.nonTerminals, Symbol::NonTerminal)
+    }
+
+    // Assert that every terminal except "\n" and "->" maps to a symbol in original scheme
+    backMap.asSequence().withIndex()
+        .filter { (id, _) -> id != newLineId && id != arrowId }
+        .map { (_, symbol) -> symbol }.requireNoNulls()
+
+    val tokens0 = tokenize(language, string) { false }
+    val tokenIds = tokens0.asSequence().map { it.id }.iterator()
+
+    // State machine for parsing rules
+    val stateLhs = 0 // Reading lhs
+    val stateArrow = 1 // Reading arrow
+    val stateRhs = 2 // Reading rhs
+    var state = stateLhs
 
     val rules = ArrayList<Rule>()
     var lhs: NonTerminalId = -1
     val rhs = ArrayList<Symbol>()
-
-    var i = 0
-
-    // Loop over rule lines
-    outer@
-    while (true) {
-        i = skipWhiteSpace(string, i)
-        if (i >= string.length) break
-
-        // Read rule lhs
-        for ((id, lexeme) in scheme.map.nonTerminals.withIndex())
-            if (matchPrefix(string, i, lexeme)) {
-                lhs = id
-                i += lexeme.length
-                break
-            }
-        if (lhs == -1) throw RuntimeException("lhs not recognized")
-
-        // Match arrow
-        if (!matchPrefix(string, i, " -> ")) break@outer
-        i += " -> ".length
-
-        // Read symbols
-        inner@ while (true) {
-            i = skipSpace(string, i)
-            if (i >= string.length) break
-
-            if (string[i] == '\n') {
-                rules.add(Rule(lhs, rhs.toTypedArray()))
-                i++
-
-                lhs = -1
-                rhs.clear()
-                break
-            }
-
-            symbolIterator.reset()
-            for ((symbol, lexeme) in symbolIterator)
-                if (matchPrefix(string, i, lexeme)) {
-                    rhs.add(symbol)
-                    i += lexeme.length
-
-                    continue@inner
+    for (tokenId in tokenIds) {
+        when (state) {
+            stateLhs -> {
+                if (tokenId == newLineId || tokenId == metaEofId) continue
+                when (val lhs0 = backMap[tokenId]) {
+                    is Symbol.NonTerminal -> lhs = lhs0.id
+                    else -> throw RuntimeException("Expected rule lhs")
                 }
-            throw RuntimeException("Unrecognized symbol at index \"$i\"")
+                state = stateArrow
+            }
+            stateArrow -> {
+                // Match arrow
+                when (tokenId) {
+                    arrowId -> {
+                    }
+                    metaEofId -> throw RuntimeException("Expected arrow, found eof")
+                    else -> throw RuntimeException("Expected arrow, found terminal")
+                }
+                state = stateRhs
+            }
+            stateRhs -> {
+                if (tokenId == newLineId || tokenId == metaEofId) {
+                    // Rule end
+                    rules.add(Rule(lhs, rhs.toTypedArray()))
+                    lhs = -1
+                    rhs.clear()
+
+                    state = stateLhs
+                    continue
+                }
+                rhs.add(backMap[tokenId]!!)
+                // State unchanged
+            }
         }
     }
 
