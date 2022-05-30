@@ -2,7 +2,9 @@ package jitrs.links.tablegen
 
 import jitrs.links.*
 
+// For each symbol, follow set of right-most terminals are left-most terminals of the following symbol.
 
+// Entry point
 fun computeFollowMap(scheme: Scheme, rules: Rules): Follow {
     val initials = computeInitials(scheme, rules)
     val finals = computeFinals(scheme, rules)
@@ -40,7 +42,7 @@ fun computeFollowMap(scheme: Scheme, rules: Rules): Follow {
  * Compute leftmost/rightmost symbols in each nonterminal
  * @return key is NonTerminalId
  */
-fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: Extreme): Array<Array<Symbol>> {
+private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: Extreme): Array<Array<Symbol>> {
     // Key is NonTerminalId
     val result = Array<Array<Symbol>?>(scheme.map.nonTerminals.size) { null }
     // Key is NonTerminalId
@@ -96,7 +98,7 @@ const val rightmost = true
  * Compute leftmost terminals in each nonterminal
  * @return key is NonTerminalId
  */
-fun computeInitials(scheme: Scheme, rules: Rules): Array<Array<TerminalId>> =
+private fun computeInitials(scheme: Scheme, rules: Rules): Array<Array<TerminalId>> =
     computeExtremes(scheme, rules, leftmost).map {
         it.asSequence()
             .filter { symbol -> symbol is Symbol.Terminal }
@@ -107,7 +109,7 @@ fun computeInitials(scheme: Scheme, rules: Rules): Array<Array<TerminalId>> =
  * Compute rightmost symbols in each nonterminal
  * @return key is NonTerminalId
  */
-fun computeFinals(scheme: Scheme, rules: Rules): Array<Array<Symbol>> =
+private fun computeFinals(scheme: Scheme, rules: Rules): Array<Array<Symbol>> =
     computeExtremes(scheme, rules, rightmost)
 
 fun mustBeAdded(rules: Rules, follow: Follow, ruleId: RuleId, lookahead: TerminalId): Boolean {
