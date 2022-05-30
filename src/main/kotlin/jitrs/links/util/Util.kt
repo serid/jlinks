@@ -8,6 +8,6 @@ fun matchPrefix(string: String, from: Int, prefix: String): Boolean {
     return true
 }
 
-fun myAssert(debug: Boolean, condition: Boolean) {
-    if (debug && !condition) throw AssertionError("Assertion failed")
+fun myAssert(condition: Boolean) {
+    if (!condition) throw AssertionError("Assertion failed")
 }

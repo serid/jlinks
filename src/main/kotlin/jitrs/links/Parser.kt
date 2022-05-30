@@ -105,9 +105,11 @@ class PProcess private constructor(
             is Action.Done -> {
                 this.stateStack.removeLast()
 
-                myAssert(debug, stateStack.size == 1)
-                myAssert(debug, stateStack.last() == 0)
-                myAssert(debug, cstStack.size == 1)
+                if (debug) {
+                    myAssert(stateStack.size == 1)
+                    myAssert(stateStack.last() == 0)
+                    myAssert(cstStack.size == 1)
+                }
                 StepResult.Done(this.cstStack.last())
             }
         }

@@ -17,7 +17,7 @@ internal abstract class AbstractParserTest {
         val cst = parseOne(table, rules, tokens, true)
 
         assertEquals(expectedCst, cst.toString(scheme))
-        myAssert(true, table.isUnambiguous())
+        myAssert(table.isUnambiguous())
     }
 
     fun testParses(input: String, expectedCsts: Array<String>) {
@@ -32,7 +32,7 @@ internal abstract class AbstractParserTest {
 
         for ((expectedCst, cst) in expectedCsts.asSequence().zip(csts.asSequence()))
             assertEquals(expectedCst, cst.toString(scheme))
-        myAssert(true, !table.isUnambiguous())
+        myAssert(!table.isUnambiguous())
     }
 
     abstract fun getScheme(): Scheme
