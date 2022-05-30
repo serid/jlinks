@@ -84,10 +84,7 @@ fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: Extreme):
         for (i in visited.indices) visited[i] = false
     }
 
-    if (result.any { it == null })
-        throw RuntimeException("idk")
-    @Suppress("UNCHECKED_CAST")
-    return result as Array<Array<Symbol>>
+    return result.requireNoNulls()
 }
 
 typealias Extreme = Boolean

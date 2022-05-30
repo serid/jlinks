@@ -109,10 +109,7 @@ class PProcess private constructor(
                     poppedNodes0[rhsLength - i - 1] = this.cstStack.removeLast()
                     this.stateStack.removeLast() // also remove states
                 }
-                // none of elements are null
-                // source: trust me bro
-                @Suppress("UNCHECKED_CAST")
-                val poppedCsts = poppedNodes0 as Array<Cst>
+                val poppedCsts = poppedNodes0.requireNoNulls()
 
                 // check that nodes from the stack match items expected by the rule
                 if (debug) {
