@@ -21,12 +21,12 @@ internal class MetaParserTest {
     )
 
     private fun getExpectedRules() = arrayOf(
-        Rule(0, arrayOf(Symbol.NonTerminal(1), Symbol.Terminal(4))),
-        Rule(1, arrayOf(Symbol.NonTerminal(1), Symbol.Terminal(0), Symbol.NonTerminal(2))),
+        Rule(0, arrayOf(Symbol.NonTerminal(1), Symbol.Terminal(0))),
         Rule(1, arrayOf(Symbol.NonTerminal(1), Symbol.Terminal(1), Symbol.NonTerminal(2))),
+        Rule(1, arrayOf(Symbol.NonTerminal(1), Symbol.Terminal(2), Symbol.NonTerminal(2))),
         Rule(1, arrayOf(Symbol.NonTerminal(2))),
-        Rule(2, arrayOf(Symbol.Terminal(2))),
-        Rule(2, arrayOf(Symbol.Terminal(3)))
+        Rule(2, arrayOf(Symbol.Terminal(3))),
+        Rule(2, arrayOf(Symbol.Terminal(4)))
     )
 
     private fun getActualRules(scheme: Scheme) = metaParse(

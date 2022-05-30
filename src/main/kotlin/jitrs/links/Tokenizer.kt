@@ -104,7 +104,7 @@ data class Scheme(
     companion object {
         // Sort terminals in order of decreasing length
         // Without sorting, tokenization of "integer" in language ("int", "integer") yields Token(INT) and tail "eger"
-        fun sortTerminals(terminals: Array<String>): Unit = terminals.sortWith { x, y -> x.length - y.length }
+        fun sortTerminals(terminals: Array<String>): Unit = terminals.sortWith { x, y -> y.length - x.length }
     }
 }
 
