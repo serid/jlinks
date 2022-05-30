@@ -3,7 +3,19 @@ package jitrs.links
 import jitrs.links.util.ArrayIterator
 import jitrs.links.util.myAssert
 
-fun parse(table: Table, rules: Rules, tokens: ArrayIterator<Token>, debug: Boolean = true): Cst {
+/**
+ * @param returnFirstParse GLR parser is capable of handling ambiguous grammars and returning multiple parse trees.
+ * If `returnFirstParse` is `true`, parsing ends after finding first successful parse tree.
+ */
+fun parse(
+    table: Table,
+    rules: Rules,
+    tokens: ArrayIterator<Token>,
+    returnFirstParse: Boolean,
+    debug: Boolean
+): Array<Cst> {
+    val results = ArrayList<Cst>()
+
     val processes: ArrayList<PProcess> = arrayListOf(
         // Initial process
         PProcess(table, rules, tokens, debug)
@@ -11,19 +23,29 @@ fun parse(table: Table, rules: Rules, tokens: ArrayIterator<Token>, debug: Boole
 
     val newProcesses = ArrayList<PProcess>()
 
-    outer@ while (true) {
+    outer@ while (processes.isNotEmpty()) {
         val iterator = processes.iterator()
         for (process in iterator)
             when (val isDone = process.step(newProcesses)) {
                 is StepResult.Pending -> {
                 }
                 is StepResult.Error -> iterator.remove()
-                is StepResult.Done -> return isDone.result
+                is StepResult.Done -> {
+                    results.add(isDone.result)
+                    if (returnFirstParse)
+                        break@outer
+                }
             }
 
         processes.addAll(newProcesses)
         newProcesses.clear()
     }
+
+    return results.toTypedArray()
+}
+
+fun parseOne(table: Table, rules: Rules, tokens: ArrayIterator<Token>, debug: Boolean): Cst {
+    return parse(table, rules, tokens, returnFirstParse = true, debug = debug)[0]
 }
 
 /**

@@ -5,11 +5,19 @@ import org.junit.jupiter.api.Test
 /**
  * Generate table for dangling else problem.
  * https://en.wikipedia.org/wiki/Dangling_else
+ *
+ * Grammar is intentionally ambiguous and parser produces two fitting parse trees
  */
 internal class IfThenElseTest : AbstractParserTest() {
     @Test
     fun testParse() {
-        testParse("if then if then 0 else 0", "Stmt[if,then,Stmt[if,then,Stmt[0],else,Stmt[0]]]")
+        testParses(
+            "if then if then 0 else 0",
+            arrayOf(
+                "Stmt[if,then,Stmt[if,then,Stmt[0],else,Stmt[0]]]",
+                "Stmt[if,then,Stmt[if,then,Stmt[0]],else,Stmt[0]]"
+            )
+        )
     }
 
     override fun getScheme() = Scheme(

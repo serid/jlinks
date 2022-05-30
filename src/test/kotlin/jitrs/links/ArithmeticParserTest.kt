@@ -45,7 +45,7 @@ fun parenthesize(scheme: Scheme, rules: Rules, table: Table, string: String): St
     val tokens0 = tokenize(scheme.map.terminals, string) { false }
     val tokens = ArrayIterator(tokens0)
 
-    return cstToAst(scheme, parse(table, rules, tokens, true)).toString()
+    return cstToAst(scheme, parseOne(table, rules, tokens, true)).toString()
 }
 
 fun cstToAst(scheme: Scheme, cst: Cst): Ast = when (cst) {
