@@ -11,7 +11,7 @@ internal abstract class AbstractParserTest {
         val rules = getRules(scheme)
         val table = generateTable(scheme, rules)
 
-        val tokens0 = tokenize(scheme.map.terminals, input) { false }
+        val tokens0 = tokenize(scheme.map.terminals, input)
         val tokens = ArrayIterator(tokens0)
 
         val cst = parseOne(table, rules, tokens, true)
@@ -25,7 +25,7 @@ internal abstract class AbstractParserTest {
         val rules = getRules(scheme)
         val table = generateTable(scheme, rules)
 
-        val tokens0 = tokenize(scheme.map.terminals, input) { false }
+        val tokens0 = tokenize(scheme.map.terminals, input)
         val tokens = ArrayIterator(tokens0)
 
         val csts = parse(table, rules, tokens, returnFirstParse = false, debug = true)

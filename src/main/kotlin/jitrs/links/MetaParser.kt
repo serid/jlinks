@@ -40,7 +40,7 @@ fun metaParse(scheme: Scheme, string: String): Rules {
         .filter { (id, _) -> id != newLineId && id != arrowId }
         .map { (_, symbol) -> symbol }.requireNoNulls()
 
-    val tokens0 = tokenize(language, string) { false }
+    val tokens0 = tokenize(language, string)
     val tokenIds = tokens0.asSequence().map { it.id }.iterator()
 
     // State machine for parsing rules

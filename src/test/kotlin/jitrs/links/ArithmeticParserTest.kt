@@ -42,7 +42,7 @@ internal class ArithmeticParserTest {
 }
 
 fun parenthesize(scheme: Scheme, rules: Rules, table: Table, string: String): String {
-    val tokens0 = tokenize(scheme.map.terminals, string) { false }
+    val tokens0 = tokenize(scheme.map.terminals, string)
     val tokens = ArrayIterator(tokens0)
 
     return cstToAst(scheme, parseOne(table, rules, tokens, true)).toString()

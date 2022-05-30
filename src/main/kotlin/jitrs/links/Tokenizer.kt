@@ -5,7 +5,12 @@ import jitrs.links.util.matchPrefix
 
 // Terminals "<int>", "<id>", "<string>" and "<eof>" have special meaning for the tokenizer.
 // Use escape prefix $ to treat them as normal lexemes.
-fun tokenize(terminals: Array<String>, string: String, identCharacterPredicate: (Char) -> Boolean): Array<Token> {
+fun tokenize(
+    terminals: Array<String>,
+    string: String,
+    identStartPredicate: (Char) -> Boolean = { false },
+    identPartPredicate: (Char) -> Boolean = { false }
+): Array<Token> {
     // Split terminals into "lexemes" and "special"
     val lexemeTerminals0 = arrayListOf<Pair<TerminalId, String>>()
 
@@ -51,12 +56,12 @@ fun tokenize(terminals: Array<String>, string: String, identCharacterPredicate: 
                 }
                 result.add(Token(intSpecialId, Token.Data.IntToken(n)))
             }
-            identSpecialId != -1 && identCharacterPredicate(string[i]) -> {
+            identSpecialId != -1 && identStartPredicate(string[i]) -> {
                 val s = StringBuilder()
-                while (i < string.length && identCharacterPredicate(string[i])) {
+                do {
                     s.append(string[i])
                     i++
-                }
+                } while (i < string.length && identPartPredicate(string[i]))
                 result.add(Token(identSpecialId, Token.Data.IdentToken(s.toString())))
             }
             stringSpecialId != -1 && string[i] == '"' -> {
