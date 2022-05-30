@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
  * Generate table for grammar in
  * https://en.wikipedia.org/wiki/LR_parser#Grammar_for_the_example_A*2_+_1
  */
-internal class ParserTest {
+internal class ArithmeticParserTest {
     @Test
     fun testParse() {
         val scheme = getScheme()
