@@ -2,6 +2,7 @@ package jitrs.links
 
 import jitrs.util.UnreachableError
 import jitrs.util.matchPrefix
+import jitrs.util.myAssert
 
 // Terminals "<int>", "<id>", "<string>" and "<eof>" have special meaning for the tokenizer.
 // Use escape prefix $ to treat them as normal lexemes.
@@ -31,7 +32,7 @@ fun tokenize(
 
         // Try lexemes
         for ((id, lexeme) in lexemeTerminals) if (matchPrefix(string, i, lexeme)) {
-            result.add(Token(id, Token.Data.LexemeToken))
+            result.add(Token(id, Unit))
             i += lexeme.length
             continue@outer
         }
@@ -45,7 +46,7 @@ fun tokenize(
                     n += string[i].digitToInt()
                     i++
                 }
-                result.add(Token(specialIdInfo.intSpecialId, Token.Data.IntToken(n)))
+                result.add(Token(specialIdInfo.intSpecialId, n))
             }
             specialIdInfo.identSpecialId != -1 && identStartPredicate(string[i]) -> {
                 val s = StringBuilder()
@@ -53,7 +54,7 @@ fun tokenize(
                     s.append(string[i])
                     i++
                 } while (i < string.length && identPartPredicate(string[i]))
-                result.add(Token(specialIdInfo.identSpecialId, Token.Data.IdentToken(s.toString())))
+                result.add(Token(specialIdInfo.identSpecialId, s.toString()))
             }
             specialIdInfo.stringSpecialId != -1 && string[i] == '"' -> {
                 val s = StringBuilder()
@@ -62,12 +63,12 @@ fun tokenize(
                     i++
                 }
                 if (i == string.length) throw RuntimeException("expected ending quote")
-                result.add(Token(specialIdInfo.stringSpecialId, Token.Data.StringToken(s.toString())))
+                result.add(Token(specialIdInfo.stringSpecialId, s.toString()))
             }
             else -> throw RuntimeException("Unrecognized token")
         }
     }
-    result.add(Token(specialIdInfo.eofSpecialId, Token.Data.LexemeToken))
+    result.add(Token(specialIdInfo.eofSpecialId, Unit))
 
     return result.toTypedArray()
 }
@@ -126,6 +127,15 @@ data class SpecialIdInfo(
     val stringSpecialId: TerminalId,
     val eofSpecialId: TerminalId,
 ) {
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun isTerminalWithData(id: TerminalId): Boolean =
+        id == intSpecialId ||
+                id == identSpecialId ||
+                id == stringSpecialId
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun isSpecialTerminal(id: TerminalId): Boolean = isTerminalWithData(id) || id == eofSpecialId
+
     companion object {
         fun from(terminals: Array<String>): SpecialIdInfo {
             // Find ids of special terminals
@@ -152,25 +162,22 @@ data class SpecialIdInfo(
 // generic token
 data class Token(
     val id: TerminalId,
-    val data: Data
+    val data: Any // Int | String | Unit. Interpretation depends on id
 ) {
-    sealed class Data {
-        data class IntToken(val data: Int) : Data()
-        data class IdentToken(val data: String) : Data()
-        data class StringToken(val data: String) : Data()
-        object LexemeToken : Data()
+    init {
+        myAssert(data is Int || data is String || data is Unit)
     }
 
     fun toString(scheme: Scheme): String {
         val s = scheme.map.terminals[this.id]
-        return if (this.data is Data.LexemeToken) {
+        return if (!scheme.specialIdInfo.isTerminalWithData(this.id)) {
             s
         } else {
-            val s2 = when (this.data) {
-                is Data.IntToken -> data.data.toString()
-                is Data.IdentToken -> data.data
-                is Data.StringToken -> "\"${data.data}\""
-                is Data.LexemeToken -> throw UnreachableError()
+            val s2 = when (this.id) {
+                scheme.specialIdInfo.intSpecialId -> data.toString()
+                scheme.specialIdInfo.identSpecialId -> data as String
+                scheme.specialIdInfo.stringSpecialId -> "\"$data\""
+                else -> throw UnreachableError()
             }
             "($s:$s2)"
         }

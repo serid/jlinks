@@ -49,9 +49,9 @@ internal class ArithmeticParserTest {
     }
 
     private fun cstToAst(scheme: Scheme, cst: Cst): Expr = when (cst) {
-        is Cst.Leaf -> when (val data = cst.token.data) {
-            is Token.Data.IntToken -> Expr.Num(data.data)
-            is Token.Data.IdentToken -> Expr.Ident(data.data)
+        is Cst.Leaf -> when (cst.token.id) {
+            scheme.specialIdInfo.intSpecialId -> Expr.Num(cst.token.data as Int)
+            scheme.specialIdInfo.identSpecialId -> Expr.Ident(cst.token.data as String)
             else -> throw RuntimeException()
         }
         is Cst.Node -> {
