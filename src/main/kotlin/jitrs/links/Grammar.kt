@@ -13,7 +13,7 @@ class Grammar private constructor(
     private val debug: Boolean,
 ) {
     fun parseOne(string: String): Cst {
-        val tokens = tokenize(scheme.map.terminals, string, identStartPredicate, identPartPredicate)
+        val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
         return parseOne(table, rules, ArrayIterator(tokens), debug)
     }
 
@@ -28,7 +28,7 @@ class Grammar private constructor(
             identPartPredicate: (Char) -> Boolean,
             debug: Boolean = true,
         ): Grammar {
-            val scheme = Scheme(
+            val scheme = Scheme.new(
                 SymbolArray(
                     terminals,
                     nonTerminals

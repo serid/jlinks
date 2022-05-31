@@ -12,7 +12,7 @@ internal class TableGenTest : AbstractParserTest() {
         testParse("0 + 1 * 0", "E:1[E:2[E:3[B:4[0]],+,B:5[1]],*,B:4[0]]")
     }
 
-    override fun getScheme() = Scheme(
+    override fun getScheme() = Scheme.new(
         SymbolArray(
             arrayOf("*", "+", "0", "1", "<eof>"),
             arrayOf("S", "E", "B")

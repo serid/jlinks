@@ -7,26 +7,17 @@ import jitrs.util.matchPrefix
 // Use escape prefix $ to treat them as normal lexemes.
 fun tokenize(
     terminals: Array<String>,
+    specialIdInfo: SpecialIdInfo,
     string: String,
     identStartPredicate: (Char) -> Boolean = { false },
     identPartPredicate: (Char) -> Boolean = { false }
 ): Array<Token> {
     // Split terminals into "lexemes" and "special"
-    val lexemeTerminals0 = arrayListOf<Pair<TerminalId, String>>()
-
-    // Find ids of special terminals
-    var intSpecialId: TerminalId = -1
-    var identSpecialId: TerminalId = -1
-    var stringSpecialId: TerminalId = -1
-    var eofSpecialId: TerminalId = -1
-    for ((i, str) in terminals.withIndex()) when (str) {
-        "<int>" -> intSpecialId = i
-        "<id>" -> identSpecialId = i
-        "<string>" -> stringSpecialId = i
-        "<eof>" -> eofSpecialId = i
-        else -> lexemeTerminals0.add(Pair(i, unEscapeTerminal(str)))
-    }
-    val lexemeTerminals = lexemeTerminals0.toTypedArray()
+    val lexemeTerminals = terminals.asSequence()
+        .withIndex()
+        .filter { (_, str) -> !isSpecialTerminal(str) }
+        .map { (i, str) -> Pair(i, unEscapeTerminal(str)) }
+        .toList().toTypedArray()
 
 
     val result = arrayListOf<Token>()
@@ -47,39 +38,46 @@ fun tokenize(
 
         // Try specials
         when {
-            intSpecialId != -1 && Character.isDigit(string[i]) -> {
+            specialIdInfo.intSpecialId != -1 && Character.isDigit(string[i]) -> {
                 var n = 0
                 while (i < string.length && Character.isDigit(string[i])) {
                     n *= 10
                     n += string[i].digitToInt()
                     i++
                 }
-                result.add(Token(intSpecialId, Token.Data.IntToken(n)))
+                result.add(Token(specialIdInfo.intSpecialId, Token.Data.IntToken(n)))
             }
-            identSpecialId != -1 && identStartPredicate(string[i]) -> {
+            specialIdInfo.identSpecialId != -1 && identStartPredicate(string[i]) -> {
                 val s = StringBuilder()
                 do {
                     s.append(string[i])
                     i++
                 } while (i < string.length && identPartPredicate(string[i]))
-                result.add(Token(identSpecialId, Token.Data.IdentToken(s.toString())))
+                result.add(Token(specialIdInfo.identSpecialId, Token.Data.IdentToken(s.toString())))
             }
-            stringSpecialId != -1 && string[i] == '"' -> {
+            specialIdInfo.stringSpecialId != -1 && string[i] == '"' -> {
                 val s = StringBuilder()
                 while (i < string.length && string[i] != '"') {
                     s.append(string[i])
                     i++
                 }
                 if (i == string.length) throw RuntimeException("expected ending quote")
-                result.add(Token(stringSpecialId, Token.Data.StringToken(s.toString())))
+                result.add(Token(specialIdInfo.stringSpecialId, Token.Data.StringToken(s.toString())))
             }
             else -> throw RuntimeException("Unrecognized token")
         }
     }
-    result.add(Token(eofSpecialId, Token.Data.LexemeToken))
+    result.add(Token(specialIdInfo.eofSpecialId, Token.Data.LexemeToken))
 
     return result.toTypedArray()
 }
+
+fun tokenize(
+    scheme: Scheme,
+    string: String,
+    identStartPredicate: (Char) -> Boolean = { false },
+    identPartPredicate: (Char) -> Boolean = { false }
+): Array<Token> = tokenize(scheme.map.terminals, scheme.specialIdInfo, string, identStartPredicate, identPartPredicate)
 
 fun isSpecialTerminal(string: String) = when (string) {
     "<int>", "<id>", "<string>", "<eof>" -> true
@@ -92,13 +90,10 @@ fun unEscapeTerminal(string: String): String = string.removePrefix("$")
 
 
 // maps token ids to readable names
-data class Scheme(
-    val map: SymbolArray<String>
+class Scheme private constructor(
+    val map: SymbolArray<String>,
+    val specialIdInfo: SpecialIdInfo,
 ) {
-    init {
-        sortTerminals(map.terminals)
-    }
-
     val reverse: HashMap<String, Symbol> by lazy {
         val h = hashMapOf<String, Symbol>()
         for ((id, str) in map.terminals.withIndex()) h[str] = Symbol.Terminal(id)
@@ -107,9 +102,50 @@ data class Scheme(
     }
 
     companion object {
+        fun new(
+            map: SymbolArray<String>
+        ): Scheme {
+            // Sort terminals
+            sortTerminals(map.terminals)
+
+            return Scheme(
+                map,
+                SpecialIdInfo.from(map.terminals)
+            )
+        }
+
         // Sort terminals in order of decreasing length
         // Without sorting, tokenization of "integer" in language ("int", "integer") yields Token(INT) and tail "eger"
         fun sortTerminals(terminals: Array<String>): Unit = terminals.sortWith { x, y -> y.length - x.length }
+    }
+}
+
+data class SpecialIdInfo(
+    val intSpecialId: TerminalId,
+    val identSpecialId: TerminalId,
+    val stringSpecialId: TerminalId,
+    val eofSpecialId: TerminalId,
+) {
+    companion object {
+        fun from(terminals: Array<String>): SpecialIdInfo {
+            // Find ids of special terminals
+            var intSpecialId: TerminalId = -1
+            var identSpecialId: TerminalId = -1
+            var stringSpecialId: TerminalId = -1
+            var eofSpecialId: TerminalId = -1
+            for ((i, str) in terminals.withIndex()) when (str) {
+                "<int>" -> intSpecialId = i
+                "<id>" -> identSpecialId = i
+                "<string>" -> stringSpecialId = i
+                "<eof>" -> eofSpecialId = i
+            }
+            return SpecialIdInfo(
+                intSpecialId,
+                identSpecialId,
+                stringSpecialId,
+                eofSpecialId
+            )
+        }
     }
 }
 

@@ -20,7 +20,7 @@ internal class IfThenElseTest : AbstractParserTest() {
         )
     }
 
-    override fun getScheme() = Scheme(
+    override fun getScheme() = Scheme.new(
         SymbolArray(
             arrayOf("if", "then", "else", "0", "<eof>"),
             arrayOf("S", "Stmt")

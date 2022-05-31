@@ -21,7 +21,7 @@ internal class ArithmeticParserTest {
         assertEquals("((10 + (20 * 30)) + 40)", actual)
     }
 
-    private fun getScheme() = Scheme(
+    private fun getScheme() = Scheme.new(
         SymbolArray(
             arrayOf("<int>", "<id>", "*", "+", "<eof>"),
             arrayOf("Goal", "Sums", "Products", "Value")
@@ -42,7 +42,7 @@ internal class ArithmeticParserTest {
     )
 
     private fun parenthesize(scheme: Scheme, rules: Rules, table: Table, string: String): String {
-        val tokens0 = tokenize(scheme.map.terminals, string)
+        val tokens0 = tokenize(scheme, string)
         val tokens = ArrayIterator(tokens0)
 
         return cstToAst(scheme, parseOne(table, rules, tokens, true)).toString()

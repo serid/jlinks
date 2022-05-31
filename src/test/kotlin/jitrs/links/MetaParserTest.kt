@@ -13,7 +13,7 @@ internal class MetaParserTest {
         assertContentEquals(expected, actual)
     }
 
-    private fun getScheme() = Scheme(
+    private fun getScheme() = Scheme.new(
         SymbolArray(
             arrayOf("*", "+", "0", "1", "<eof>"),
             arrayOf("S", "E", "B")

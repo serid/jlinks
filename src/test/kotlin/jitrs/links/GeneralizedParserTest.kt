@@ -12,7 +12,7 @@ internal class GeneralizedParserTest : AbstractParserTest() {
         testParses("b e c", arrayOf("A:3[b,F:6[e],c]"))
     }
 
-    override fun getScheme() = Scheme(
+    override fun getScheme() = Scheme.new(
         SymbolArray(
             arrayOf("a", "b", "c", "d", "e", "<eof>"),
             arrayOf("S", "A", "E", "F")
