@@ -57,13 +57,15 @@ fun tokenize(
                 result.add(Token(specialIdInfo.identSpecialId, s.toString()))
             }
             specialIdInfo.stringSpecialId != -1 && string[i] == '"' -> {
+                i++
                 val s = StringBuilder()
                 while (i < string.length && string[i] != '"') {
                     s.append(string[i])
                     i++
                 }
-                if (i == string.length) throw RuntimeException("expected ending quote")
+                if (i == string.length && string[i - 1] != '"') throw RuntimeException("expected ending quote")
                 result.add(Token(specialIdInfo.stringSpecialId, s.toString()))
+                i++
             }
             else -> throw RuntimeException("Unrecognized token")
         }
