@@ -1,8 +1,13 @@
 package jitrs.links
 
-import jitrs.links.parser.parseOne
 import jitrs.links.parser.parse
+import jitrs.links.parser.parseOne
+import jitrs.links.tablegen.Rules
+import jitrs.links.tablegen.SymbolArray
+import jitrs.links.tablegen.Table
 import jitrs.links.tablegen.generateTable
+import jitrs.links.tokenizer.Scheme
+import jitrs.links.tokenizer.tokenize
 import jitrs.util.ArrayIterator
 
 @Suppress("MemberVisibilityCanBePrivate")

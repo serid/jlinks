@@ -1,6 +1,6 @@
 package jitrs.links.tablegen
 
-import jitrs.links.*
+import jitrs.links.tokenizer.Scheme
 
 // For each symbol, follow set of right-most terminals are left-most terminals of the following symbol.
 

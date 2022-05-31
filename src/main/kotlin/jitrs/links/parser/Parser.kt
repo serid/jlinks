@@ -1,6 +1,8 @@
 package jitrs.links.parser
 
-import jitrs.links.*
+import jitrs.links.Cst
+import jitrs.links.tablegen.*
+import jitrs.links.tokenizer.Token
 import jitrs.util.ArrayIterator
 import jitrs.util.myAssert
 

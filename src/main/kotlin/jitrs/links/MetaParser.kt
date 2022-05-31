@@ -1,5 +1,8 @@
 package jitrs.links
 
+import jitrs.links.tablegen.*
+import jitrs.links.tokenizer.*
+
 /**
  * Parse a string into an array of parsing rules
  */

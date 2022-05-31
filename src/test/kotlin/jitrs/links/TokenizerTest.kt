@@ -1,5 +1,8 @@
 package jitrs.links
 
+import jitrs.links.tablegen.SymbolArray
+import jitrs.links.tokenizer.Scheme
+import jitrs.links.tokenizer.tokenize
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 

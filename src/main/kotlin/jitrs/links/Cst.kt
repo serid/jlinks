@@ -1,5 +1,10 @@
 package jitrs.links
 
+import jitrs.links.tablegen.NonTerminalId
+import jitrs.links.tablegen.RuleId
+import jitrs.links.tokenizer.Scheme
+import jitrs.links.tokenizer.Token
+
 // Generic syntax tree for results of parsing
 sealed class Cst {
     data class Leaf(

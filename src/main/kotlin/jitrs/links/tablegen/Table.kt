@@ -1,4 +1,6 @@
-package jitrs.links
+package jitrs.links.tablegen
+
+import jitrs.links.Cst
 
 typealias TerminalId = Int
 typealias NonTerminalId = Int

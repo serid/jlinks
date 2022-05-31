@@ -1,6 +1,6 @@
 package jitrs.links.tablegen
 
-import jitrs.links.*
+import jitrs.links.tokenizer.Scheme
 
 fun generateTable(scheme: Scheme, rules: Rules): Table {
     val eofSpecialId: TerminalId = scheme.map.terminals.indexOfFirst { it == "<eof>" }

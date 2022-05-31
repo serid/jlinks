@@ -1,5 +1,6 @@
 package jitrs.links
 
+import jitrs.links.tokenizer.Scheme
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
