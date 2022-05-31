@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 internal class GeneralizedParserTest : AbstractParserTest() {
     @Test
     fun testParse() {
-        testParses("b e c", arrayOf("A[b,F[e],c]"))
+        testParses("b e c", arrayOf("A:3[b,F:6[e],c]"))
     }
 
     override fun getScheme() = Scheme(

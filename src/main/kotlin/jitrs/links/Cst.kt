@@ -8,6 +8,7 @@ sealed class Cst {
 
     data class Node(
         val id: NonTerminalId,
+        val ruleId: RuleId,
         val children: Array<Cst>,
     ) : Cst()
 
@@ -18,7 +19,7 @@ sealed class Cst {
             }
             is Node -> {
                 val s = scheme.map.nonTerminals[this.id]
-                this.children.joinToString(",", "$s[", "]") { it.toString(scheme) }
+                this.children.joinToString(",", "$s:$ruleId[", "]") { it.toString(scheme) }
             }
         }
     }

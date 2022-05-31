@@ -14,8 +14,8 @@ internal class IfThenElseTest : AbstractParserTest() {
         testParses(
             "if then if then 0 else 0",
             arrayOf(
-                "Stmt[if,then,Stmt[if,then,Stmt[0],else,Stmt[0]]]",
-                "Stmt[if,then,Stmt[if,then,Stmt[0]],else,Stmt[0]]"
+                "Stmt:2[if,then,Stmt:3[if,then,Stmt:1[0],else,Stmt:1[0]]]",
+                "Stmt:3[if,then,Stmt:2[if,then,Stmt:1[0]],else,Stmt:1[0]]"
             )
         )
     }

@@ -147,7 +147,7 @@ class PProcess private constructor(
                 val oldState = this.stateStack.last()
                 val nextState = this.table.map[oldState].goto[lhsId]
 
-                this.cstStack.add(Cst.Node(lhsId, poppedCsts))
+                this.cstStack.add(Cst.Node(lhsId, stackAction.id, poppedCsts))
                 this.stateStack.add(nextState)
                 StepResult.Pending
             }

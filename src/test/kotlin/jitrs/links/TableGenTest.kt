@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 internal class TableGenTest : AbstractParserTest() {
     @Test
     fun testTablegen() {
-        testParse("0 + 1 * 0", "E[E[E[B[0]],+,B[1]],*,B[0]]")
+        testParse("0 + 1 * 0", "E:1[E:2[E:3[B:4[0]],+,B:5[1]],*,B:4[0]]")
     }
 
     override fun getScheme() = Scheme(
