@@ -1,5 +1,6 @@
 package jitrs.links
 
+import jitrs.links.parser.parseOne
 import jitrs.links.tablegen.generateTable
 import jitrs.util.ArrayIterator
 import org.junit.jupiter.api.Assertions.assertEquals

@@ -1,5 +1,7 @@
 package jitrs.links
 
+import jitrs.links.parser.parse
+import jitrs.links.parser.parseOne
 import jitrs.links.tablegen.generateTable
 import jitrs.util.ArrayIterator
 import jitrs.util.myAssert

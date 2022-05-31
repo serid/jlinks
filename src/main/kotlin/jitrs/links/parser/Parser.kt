@@ -1,5 +1,6 @@
-package jitrs.links
+package jitrs.links.parser
 
+import jitrs.links.*
 import jitrs.util.ArrayIterator
 import jitrs.util.myAssert
 
