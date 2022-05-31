@@ -1,13 +1,15 @@
 package jitrs.links
 
 import jitrs.links.parser.parseOne
+import jitrs.links.parser.parse
 import jitrs.links.tablegen.generateTable
 import jitrs.util.ArrayIterator
 
+@Suppress("MemberVisibilityCanBePrivate")
 class Grammar private constructor(
-    private val scheme: Scheme,
-    private val rules: Rules,
-    private val table: Table,
+    val scheme: Scheme,
+    val rules: Rules,
+    val table: Table,
     private val identStartPredicate: (Char) -> Boolean,
     private val identPartPredicate: (Char) -> Boolean,
     private val debug: Boolean,
@@ -17,15 +19,18 @@ class Grammar private constructor(
         return parseOne(table, rules, ArrayIterator(tokens), debug)
     }
 
-    fun cstToString(cst: Cst) = cst.toString(scheme)
+    fun parse(string: String): Array<Cst> {
+        val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
+        return parse(table, rules, ArrayIterator(tokens), returnFirstParse = false, debug = debug)
+    }
 
     companion object {
         fun new(
             terminals: Array<String>,
             nonTerminals: Array<String>,
             rules: String,
-            identStartPredicate: (Char) -> Boolean,
-            identPartPredicate: (Char) -> Boolean,
+            identStartPredicate: (Char) -> Boolean = { false },
+            identPartPredicate: (Char) -> Boolean = { false },
             debug: Boolean = true,
         ): Grammar {
             val scheme = Scheme.new(

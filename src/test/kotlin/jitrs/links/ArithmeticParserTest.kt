@@ -1,8 +1,5 @@
 package jitrs.links
 
-import jitrs.links.parser.parseOne
-import jitrs.links.tablegen.generateTable
-import jitrs.util.ArrayIterator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -13,23 +10,17 @@ import org.junit.jupiter.api.Test
 internal class ArithmeticParserTest {
     @Test
     fun testParse() {
-        val scheme = getScheme()
-        val rules = getRules(scheme)
-        val table = generateTable(scheme, rules)
+        val grammar = Grammar.new(terminals(), nonTerminals(), rules)
 
-        val actual = parenthesize(scheme, rules, table, "10 + 20 * 30 + 40")
+        val actual = cstToAst(grammar.scheme, grammar.parseOne("10 + 20 * 30 + 40")).toString()
         assertEquals("((10 + (20 * 30)) + 40)", actual)
     }
 
-    private fun getScheme() = Scheme.new(
-        SymbolArray(
-            arrayOf("<int>", "<id>", "*", "+", "<eof>"),
-            arrayOf("Goal", "Sums", "Products", "Value")
-        )
-    )
+    private fun terminals(): Array<String> = arrayOf("<int>", "<id>", "*", "+", "<eof>")
 
-    private fun getRules(scheme: Scheme) = metaParse(
-        scheme,
+    private fun nonTerminals(): Array<String> = arrayOf("Goal", "Sums", "Products", "Value")
+
+    private val rules: String =
         """
     Goal -> Sums <eof>
     Sums -> Sums + Products
@@ -39,14 +30,7 @@ internal class ArithmeticParserTest {
     Value -> <int>
     Value -> <id>
 """
-    )
 
-    private fun parenthesize(scheme: Scheme, rules: Rules, table: Table, string: String): String {
-        val tokens0 = tokenize(scheme, string)
-        val tokens = ArrayIterator(tokens0)
-
-        return cstToAst(scheme, parseOne(table, rules, tokens, true)).toString()
-    }
 
     private fun cstToAst(scheme: Scheme, cst: Cst): Expr = when (cst) {
         is Cst.Leaf -> when (cst.token.id) {

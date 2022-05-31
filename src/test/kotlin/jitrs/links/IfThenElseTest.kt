@@ -20,20 +20,14 @@ internal class IfThenElseTest : AbstractParserTest() {
         )
     }
 
-    override fun getScheme() = Scheme.new(
-        SymbolArray(
-            arrayOf("if", "then", "else", "0", "<eof>"),
-            arrayOf("S", "Stmt")
-        )
-    )
+    override fun terminals(): Array<String> = arrayOf("if", "then", "else", "0", "<eof>")
 
-    override fun getRules(scheme: Scheme) = metaParse(
-        scheme,
-        """
+    override fun nonTerminals(): Array<String> = arrayOf("S", "Stmt")
+
+    override val rules: String = """
         S -> Stmt <eof>
         Stmt -> 0
         Stmt -> if then Stmt
         Stmt -> if then Stmt else Stmt
         """
-    )
 }

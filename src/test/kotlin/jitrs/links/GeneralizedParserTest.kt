@@ -12,16 +12,11 @@ internal class GeneralizedParserTest : AbstractParserTest() {
         testParses("b e c", arrayOf("A:3[b,F:6[e],c]"))
     }
 
-    override fun getScheme() = Scheme.new(
-        SymbolArray(
-            arrayOf("a", "b", "c", "d", "e", "<eof>"),
-            arrayOf("S", "A", "E", "F")
-        )
-    )
+    override fun terminals(): Array<String> = arrayOf("a", "b", "c", "d", "e", "<eof>")
 
-    override fun getRules(scheme: Scheme) = metaParse(
-        scheme,
-        """
+    override fun nonTerminals(): Array<String> = arrayOf("S", "A", "E", "F")
+
+    override val rules: String = """
         S -> A <eof>
         A -> a E c
         A -> a F d
@@ -30,5 +25,4 @@ internal class GeneralizedParserTest : AbstractParserTest() {
         E -> e
         F -> e
         """
-    )
 }
