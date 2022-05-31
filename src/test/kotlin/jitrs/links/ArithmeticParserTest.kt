@@ -40,47 +40,47 @@ internal class ArithmeticParserTest {
     Value -> <id>
 """
     )
-}
 
-fun parenthesize(scheme: Scheme, rules: Rules, table: Table, string: String): String {
-    val tokens0 = tokenize(scheme.map.terminals, string)
-    val tokens = ArrayIterator(tokens0)
+    private fun parenthesize(scheme: Scheme, rules: Rules, table: Table, string: String): String {
+        val tokens0 = tokenize(scheme.map.terminals, string)
+        val tokens = ArrayIterator(tokens0)
 
-    return cstToAst(scheme, parseOne(table, rules, tokens, true)).toString()
-}
-
-fun cstToAst(scheme: Scheme, cst: Cst): Ast = when (cst) {
-    is Cst.Leaf -> when (val data = cst.token.data) {
-        is Token.Data.IntToken -> Ast.Num(data.data)
-        is Token.Data.IdentToken -> Ast.Ident(data.data)
-        else -> throw RuntimeException()
+        return cstToAst(scheme, parseOne(table, rules, tokens, true)).toString()
     }
-    is Cst.Node -> {
-        if (cst.children.size > 1) {
-            val id = (cst.children[1] as? Cst.Leaf)?.token?.id!!
-            val ch = scheme.map.terminals[id][0]
-            Ast.Binop(ch, cstToAst(scheme, cst.children[0]), cstToAst(scheme, cst.children[2]))
-        } else {
-            cstToAst(scheme, cst.children[0])
+
+    private fun cstToAst(scheme: Scheme, cst: Cst): Expr = when (cst) {
+        is Cst.Leaf -> when (val data = cst.token.data) {
+            is Token.Data.IntToken -> Expr.Num(data.data)
+            is Token.Data.IdentToken -> Expr.Ident(data.data)
+            else -> throw RuntimeException()
+        }
+        is Cst.Node -> {
+            if (cst.children.size > 1) {
+                val id = (cst.children[1] as? Cst.Leaf)?.token?.id!!
+                val ch = scheme.map.terminals[id][0]
+                Expr.Binop(ch, cstToAst(scheme, cst.children[0]), cstToAst(scheme, cst.children[2]))
+            } else {
+                cstToAst(scheme, cst.children[0])
+            }
         }
     }
-}
 
-sealed class Ast {
-    data class Num(val num: Int) : Ast() {
-        override fun toString(): String = num.toString()
-    }
+    private sealed class Expr {
+        data class Num(val num: Int) : Expr() {
+            override fun toString(): String = num.toString()
+        }
 
-    data class Ident(val s: String) : Ast() {
-        override fun toString(): String = s
-    }
+        data class Ident(val s: String) : Expr() {
+            override fun toString(): String = s
+        }
 
-    data class Binop(
-        val op: Char,
-        val e1: Ast,
-        val e2: Ast,
-    ) : Ast() {
-        override fun toString(): String = "($e1 $op $e2)"
+        data class Binop(
+            val op: Char,
+            val e1: Expr,
+            val e2: Expr,
+        ) : Expr() {
+            override fun toString(): String = "($e1 $op $e2)"
+        }
     }
 }
 
