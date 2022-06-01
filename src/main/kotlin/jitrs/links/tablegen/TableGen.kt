@@ -199,7 +199,7 @@ data class Item(
 
         val rhs = rule.rhs.asSequence()
             .withIndex()
-            .joinToString (" ") { (i, symbol) ->
+            .joinToString(" ") { (i, symbol) ->
                 if (i == index)
                     "█" + symbol.toString(scheme)
                 else

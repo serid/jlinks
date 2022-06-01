@@ -167,6 +167,7 @@ sealed class Symbol {
     data class Terminal(val id: TerminalId) : Symbol() {
         override fun toString(scheme: Scheme): String = scheme.map.terminals[id]
     }
+
     data class NonTerminal(val id: NonTerminalId) : Symbol() {
         override fun toString(scheme: Scheme): String = scheme.map.nonTerminals[id]
     }
