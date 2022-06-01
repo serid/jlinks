@@ -42,6 +42,7 @@ data class SpecialIdInfo(
     val identSpecialId: TerminalId,
     val stringSpecialId: TerminalId,
     val eofSpecialId: TerminalId,
+    val newlineSpecialId: TerminalId,
 ) {
     @Suppress("NOTHING_TO_INLINE")
     inline fun isTerminalWithData(id: TerminalId): Boolean =
@@ -50,7 +51,8 @@ data class SpecialIdInfo(
                 id == stringSpecialId
 
     @Suppress("NOTHING_TO_INLINE")
-    inline fun isSpecialTerminal(id: TerminalId): Boolean = isTerminalWithData(id) || id == eofSpecialId
+    inline fun isSpecialTerminal(id: TerminalId): Boolean =
+        isTerminalWithData(id) || id == eofSpecialId || id == newlineSpecialId
 
     companion object {
         fun from(terminals: Array<String>): SpecialIdInfo {
@@ -59,17 +61,20 @@ data class SpecialIdInfo(
             var identSpecialId: TerminalId = -1
             var stringSpecialId: TerminalId = -1
             var eofSpecialId: TerminalId = -1
+            var newlineSpecialId: TerminalId = -1
             for ((i, str) in terminals.withIndex()) when (str) {
                 "<int>" -> intSpecialId = i
                 "<id>" -> identSpecialId = i
                 "<string>" -> stringSpecialId = i
                 "<eof>" -> eofSpecialId = i
+                "<nl>" -> newlineSpecialId = i
             }
             return SpecialIdInfo(
                 intSpecialId,
                 identSpecialId,
                 stringSpecialId,
-                eofSpecialId
+                eofSpecialId,
+                newlineSpecialId
             )
         }
     }

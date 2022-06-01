@@ -3,7 +3,7 @@ package jitrs.links.tokenizer
 import jitrs.links.tablegen.TerminalId
 import jitrs.util.matchPrefix
 
-// Terminals "<int>", "<id>", "<string>" and "<eof>" have special meaning for the tokenizer.
+// Terminals "<int>", "<id>", "<string>", "<eof>" and "<nl>" have special meaning for the tokenizer.
 // Use escape prefix $ to treat them as normal lexemes.
 fun tokenize(
     terminals: Array<String>,
@@ -38,6 +38,10 @@ fun tokenize(
 
         // Try specials
         when {
+            specialIdInfo.newlineSpecialId != -1 && string[i] == '\n' -> {
+                result.add(Token(specialIdInfo.newlineSpecialId, Unit, Span(i, i + 1)))
+                i++
+            }
             specialIdInfo.intSpecialId != -1 && Character.isDigit(string[i]) -> {
                 val start = i
 
