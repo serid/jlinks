@@ -10,21 +10,43 @@ class SyntaxErrorException(
     override fun tallMessage(): String {
         val source1 = source as String
 
-        var line1Start = source1.lastIndexOf('\n', span.start)
-        if (line1Start == -1) line1Start = source1.length
-        else line1Start++
+        val span2 = if (span.start < source1.length)
+            span
+        else
+            Span(source1.length - 1, source1.length - 1)
 
-        var line1End = source1.indexOf('\n', span.start + 1)
-        if (line1End == -1) line1End = source1.length
+        var line1Start: Int
+        var line1End: Int
 
-        val numberOfSpaces = (span.start - line1Start).coerceAtLeast(0)
-        val numberOfArrows = (span.end - span.start).coerceAtMost(line1End - span.start).coerceAtLeast(1)
+        val numberOfSpaces: Int
+        val numberOfArrows: Int
+
+        if (source1[span2.start] == '\n') {
+            line1Start = source1.lastIndexOf('\n', span2.start - 1) + 1
+            line1End = span2.start
+
+            numberOfSpaces = span2.start - line1Start
+            numberOfArrows = 1
+        } else {
+            line1Start = source1.lastIndexOf('\n', span2.start)
+            if (line1Start == -1) line1Start = source1.length
+            else line1Start++
+
+            line1End = source1.indexOf('\n', span2.start + 1)
+            if (line1End == -1) line1End = source1.length
+
+            numberOfSpaces = (span2.start - line1Start).coerceAtLeast(0)
+            numberOfArrows = (span2.end - span2.start).coerceAtMost(line1End - span2.start).coerceAtLeast(1)
+        }
+
+        val lineNo = source1.asSequence().take(line1Start).count { it == '\n' }
+        val lineNoString = "$lineNo> "
 
         val line1 = source1.substring(line1Start, line1End)
-        val line2 = " ".repeat(numberOfSpaces) + "^".repeat(numberOfArrows)
+        val line2 = " ".repeat(lineNoString.length + numberOfSpaces) + "^".repeat(numberOfArrows)
 
         return "$shortMessage\n" +
-                "$line1\n" +
+                "$lineNoString$line1\n" +
                 line2
     }
 
