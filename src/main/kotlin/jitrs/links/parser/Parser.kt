@@ -7,7 +7,6 @@ import jitrs.links.tokenizer.SyntaxErrorException
 import jitrs.links.tokenizer.Token
 import jitrs.util.ArrayIterator
 import jitrs.util.SimpleTallException
-import jitrs.util.TallException
 import jitrs.util.myAssert
 
 /**
@@ -32,19 +31,20 @@ fun parse(
     )
 
     val newProcesses = ArrayList<PProcess>()
+    val newErrors = ArrayList<SyntaxErrorException>()
 
     outer@ while (processes.isNotEmpty()) {
         val iterator = processes.iterator()
         for (process in iterator)
-            when (val isDone = process.step(newProcesses)) {
+            when (val isDone = process.step(newProcesses, newErrors)) {
                 is StepResult.Pending -> {
                 }
                 is StepResult.Error -> {
                     iterator.remove()
-                    errors.add(isDone.error)
                 }
                 is StepResult.Done -> {
                     results.add(isDone.result)
+                    iterator.remove()
                     if (returnFirstParse)
                         break@outer
                 }
@@ -52,6 +52,9 @@ fun parse(
 
         processes.addAll(newProcesses)
         newProcesses.clear()
+
+        errors.addAll(newErrors)
+        newErrors.clear()
     }
 
     if (results.isEmpty() && errors.isNotEmpty()) {
@@ -108,24 +111,28 @@ class PProcess private constructor(
     /**
      * @return concrete syntax tree or `null` if more steps are needed
      */
-    fun step(newProcesses: ArrayList<PProcess>): StepResult =
-        when (val action = this.table.map[this.stateStack.last()].action[this.lookahead.id]) {
+    fun step(newProcesses: ArrayList<PProcess>, errors: ArrayList<SyntaxErrorException>): StepResult =
+        when (val action = this.table.map[this.stateStack.last()]
+            .action[this.lookahead.id]) {
             is Action.Just -> {
-                this.invokeStackAction(action.action)
-                StepResult.Pending
+                val result = this.invokeStackAction(action.action)
+                upcastSyntaxError(result, errors)
             }
             is Action.Fork -> {
                 // Skip first action, fork a process for each remaining action and invoke the action there
                 for (i in 1 until action.actions.size) {
                     val newPProcess = this.fork()
-                    newPProcess.invokeStackAction(action.actions[i])
-                    newProcesses.add(newPProcess)
+
+                    val result = newPProcess.invokeStackAction(action.actions[i])
+                    if (result == null)
+                        newProcesses.add(newPProcess)
+                    else
+                        errors.add(result)
                 }
 
                 // Invoke first stack action in this process
-                this.invokeStackAction(action.actions[0])
-
-                StepResult.Pending
+                val result = this.invokeStackAction(action.actions[0])
+                upcastSyntaxError(result, errors)
             }
             is Action.Error -> {
                 val actual = this.scheme.map.terminals[this.lookahead.id]
@@ -135,12 +142,13 @@ class PProcess private constructor(
                     .map { (id, _) -> "`${this.scheme.map.terminals[id]}`" }
                     .joinToString(", ")
 
-                StepResult.Error(
+                errors.add(
                     SyntaxErrorException(
                         "Expected one of $expected, found $actual",
                         span = this.lookahead.span
                     )
                 )
+                StepResult.Error
             }
             is Action.Done -> {
                 this.stateStack.removeLast()
@@ -154,13 +162,13 @@ class PProcess private constructor(
             }
         }
 
-    private fun invokeStackAction(stackAction: StackAction) {
+    private fun invokeStackAction(stackAction: StackAction): SyntaxErrorException? {
         when (stackAction) {
             is StackAction.Shift -> {
                 this.cstStack.add(Cst.Leaf(this.lookahead))
                 this.stateStack.add(stackAction.state)
                 this.lookahead = this.tokens.next()
-                StepResult.Pending
+                return null
             }
             is StackAction.Reduce -> {
                 val rule = rules[stackAction.id]
@@ -186,9 +194,24 @@ class PProcess private constructor(
                 val oldState = this.stateStack.last()
                 val nextState = this.table.map[oldState].goto[lhsId]
 
-                this.cstStack.add(Cst.Node(lhsId, stackAction.id, poppedCsts))
-                this.stateStack.add(nextState)
-                StepResult.Pending
+                if (nextState == -1) {
+                    val actual = this.scheme.map.nonTerminals[lhsId]
+                    val expected = this.table.map[oldState].goto.asSequence()
+                        .withIndex()
+                        .filter { (_, action) -> action != -1 }
+                        .map { (id, _) -> "`${this.scheme.map.nonTerminals[id]}`" }
+                        .joinToString(", ")
+
+                    return SyntaxErrorException(
+                        "Expected one of $expected, found $actual",
+                        span = this.lookahead.span
+                    )
+                } else {
+                    this.cstStack.add(Cst.Node(lhsId, stackAction.id, poppedCsts))
+                    this.stateStack.add(nextState)
+
+                    return null
+                }
             }
         }
     }
@@ -206,8 +229,16 @@ class PProcess private constructor(
     )
 }
 
+private fun upcastSyntaxError(error: SyntaxErrorException?, errors: ArrayList<SyntaxErrorException>): StepResult =
+    if (error == null)
+        StepResult.Pending
+    else {
+        errors.add(error)
+        StepResult.Error
+    }
+
 sealed class StepResult {
     object Pending : StepResult()
-    data class Error(val error: SyntaxErrorException) : StepResult()
+    object Error : StepResult()
     data class Done(val result: Cst) : StepResult()
 }
