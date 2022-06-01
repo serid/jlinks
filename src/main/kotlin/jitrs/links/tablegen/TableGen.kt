@@ -169,6 +169,8 @@ fun closeItemSet(itemSet: MutableItemSet, rules: Rules): MutableItemSet {
 
         if (weDoneYet) return set2
 
+        set1.addAll(set2)
+
         // switch sets
         val tmp = set1
         set1 = set2
