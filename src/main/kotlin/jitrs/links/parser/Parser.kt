@@ -6,6 +6,8 @@ import jitrs.links.tokenizer.Scheme
 import jitrs.links.tokenizer.SyntaxErrorException
 import jitrs.links.tokenizer.Token
 import jitrs.util.ArrayIterator
+import jitrs.util.SimpleTallException
+import jitrs.util.TallException
 import jitrs.util.myAssert
 
 /**
@@ -17,6 +19,7 @@ fun parse(
     table: Table,
     rules: Rules,
     tokens: ArrayIterator<Token>,
+    source: String,
     returnFirstParse: Boolean,
     debug: Boolean
 ): Array<Cst> {
@@ -52,15 +55,23 @@ fun parse(
     }
 
     if (results.isEmpty() && errors.isNotEmpty()) {
-        val err = errors.joinToString("\n")
-        throw RuntimeException("Syntax errors:\n$err")
+        for (error in errors) error.setSource(source)
+        val err = errors.joinToString("\n") { it.message }
+        throw SimpleTallException("Syntax errors", "Syntax errors:\n$err")
     }
 
     return results.toTypedArray()
 }
 
-fun parseOne(scheme: Scheme, table: Table, rules: Rules, tokens: ArrayIterator<Token>, debug: Boolean): Cst {
-    return parse(scheme, table, rules, tokens, returnFirstParse = true, debug = debug)[0]
+fun parseOne(
+    scheme: Scheme,
+    table: Table,
+    rules: Rules,
+    tokens: ArrayIterator<Token>,
+    source: String,
+    debug: Boolean
+): Cst {
+    return parse(scheme, table, rules, tokens, source, returnFirstParse = true, debug = debug)[0]
 }
 
 /**
@@ -124,7 +135,12 @@ class PProcess private constructor(
                     .map { (id, _) -> "`${this.scheme.map.terminals[id]}`" }
                     .joinToString(", ")
 
-                StepResult.Error(SyntaxErrorException("Expected one of $expected, found $actual", this.lookahead.span))
+                StepResult.Error(
+                    SyntaxErrorException(
+                        "Expected one of $expected, found $actual",
+                        span = this.lookahead.span
+                    )
+                )
             }
             is Action.Done -> {
                 this.stateStack.removeLast()

@@ -21,12 +21,12 @@ class Grammar private constructor(
 ) {
     fun parseOne(string: String): Cst {
         val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
-        return parseOne(scheme, table, rules, ArrayIterator(tokens), debug)
+        return parseOne(scheme, table, rules, ArrayIterator(tokens), string, debug)
     }
 
     fun parse(string: String): Array<Cst> {
         val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
-        return parse(scheme, table, rules, ArrayIterator(tokens), returnFirstParse = false, debug = debug)
+        return parse(scheme, table, rules, ArrayIterator(tokens), string, returnFirstParse = false, debug = debug)
     }
 
     companion object {

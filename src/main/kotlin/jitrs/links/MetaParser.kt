@@ -63,6 +63,7 @@ fun metaParse(scheme: Scheme, string: String): Rules {
                     is Symbol.NonTerminal -> lhs = lhs0.id
                     is Symbol.Terminal -> throw SyntaxErrorException(
                         "Expected rule lhs, found ${language[tokenId]}",
+                        string,
                         span
                     )
                 }
@@ -73,8 +74,8 @@ fun metaParse(scheme: Scheme, string: String): Rules {
                 when (tokenId) {
                     arrowId -> {
                     }
-                    metaEofId -> throw SyntaxErrorException("Expected arrow, found eof", span)
-                    else -> throw SyntaxErrorException("Expected arrow, found terminal", span)
+                    metaEofId -> throw SyntaxErrorException("Expected arrow, found eof", string, span)
+                    else -> throw SyntaxErrorException("Expected arrow, found terminal", string, span)
                 }
                 state = stateRhs
             }

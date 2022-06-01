@@ -73,12 +73,12 @@ fun tokenize(
                     i++
                 }
                 if (i == string.length && string[i - 1] != '"')
-                    throw SyntaxErrorException("Expected ending quote", Span(i, i))
+                    throw SyntaxErrorException("Expected ending quote", string, Span(i, i))
                 i++
 
                 result.add(Token(specialIdInfo.stringSpecialId, s.toString(), Span(start, i)))
             }
-            else -> throw SyntaxErrorException("Unrecognized token", Span(i, i))
+            else -> throw SyntaxErrorException("Unrecognized token", string, Span(i, i))
         }
     }
     result.add(Token(specialIdInfo.eofSpecialId, Unit, Span(i, i)))
