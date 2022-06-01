@@ -11,7 +11,8 @@ fun metaParse(scheme: Scheme, string: String): Rules {
     // In this language what was nonterminals is treated as terminals
     val terminalNonTerminals = scheme.map.nonTerminals.asSequence()
     val language = scheme.map.terminals.asSequence()
-        .map(::escapeSpecialTerminal)
+        .withIndex()
+        .map { (id, str) -> escapeSpecialTerminal(scheme.specialIdInfo, id, str) }
         .plus(sequenceOf("->", "\n", "<eof>"))
         .plus(terminalNonTerminals)
         .toList().toTypedArray()

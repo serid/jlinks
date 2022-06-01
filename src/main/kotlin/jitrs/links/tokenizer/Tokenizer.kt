@@ -1,5 +1,6 @@
 package jitrs.links.tokenizer
 
+import jitrs.links.tablegen.TerminalId
 import jitrs.util.matchPrefix
 
 // Terminals "<int>", "<id>", "<string>" and "<eof>" have special meaning for the tokenizer.
@@ -14,8 +15,8 @@ fun tokenize(
     // Split terminals into "lexemes" and "special"
     val lexemeTerminals = terminals.asSequence()
         .withIndex()
-        .filter { (_, str) -> !isSpecialTerminal(str) }
-        .map { (i, str) -> Pair(i, unEscapeTerminal(str)) }
+        .filter { (id, _) -> !specialIdInfo.isSpecialTerminal(id) }
+        .map { (id, str) -> Pair(id, unEscapeTerminal(str)) }
         .toList().toTypedArray()
 
 
@@ -88,11 +89,10 @@ fun tokenize(
     identPartPredicate: (Char) -> Boolean = { false }
 ): Array<Token> = tokenize(scheme.map.terminals, scheme.specialIdInfo, string, identStartPredicate, identPartPredicate)
 
-fun isSpecialTerminal(string: String) = when (string) {
-    "<int>", "<id>", "<string>", "<eof>" -> true
-    else -> false
-}
-
-fun escapeSpecialTerminal(string: String): String = if (isSpecialTerminal(string)) "$$string" else string
+fun escapeSpecialTerminal(
+    specialIdInfo: SpecialIdInfo,
+    id: TerminalId,
+    string: String
+): String = if (specialIdInfo.isSpecialTerminal(id)) "$$string" else string
 
 fun unEscapeTerminal(string: String): String = string.removePrefix("$")

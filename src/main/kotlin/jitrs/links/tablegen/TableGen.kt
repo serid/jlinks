@@ -3,8 +3,6 @@ package jitrs.links.tablegen
 import jitrs.links.tokenizer.Scheme
 
 fun generateTable(scheme: Scheme, rules: Rules): Table {
-    val eofSpecialId: TerminalId = scheme.map.terminals.indexOfFirst { it == "<eof>" }
-
     val follow = computeFollowMap(scheme, rules)
 
     val rows = ArrayList<Row>()
@@ -29,7 +27,7 @@ fun generateTable(scheme: Scheme, rules: Rules): Table {
             val nextSymbol = item.nextSymbol(rules)
 
             // skip eof token
-            if (nextSymbol is Symbol.Terminal && nextSymbol.id == eofSpecialId) {
+            if (nextSymbol is Symbol.Terminal && nextSymbol.id == scheme.specialIdInfo.eofSpecialId) {
                 endsInEof = true
                 continue
             }
@@ -53,7 +51,6 @@ fun generateTable(scheme: Scheme, rules: Rules): Table {
             computeRow(
                 scheme = scheme,
                 rules = rules,
-                eofSpecialId = eofSpecialId,
                 follow = follow,
                 visitedSets = visitedSets,
                 newStateId = rows.size,
@@ -73,7 +70,6 @@ fun computeRow(
     // Invariant parameters
     scheme: Scheme,
     rules: Rules,
-    eofSpecialId: TerminalId,
     follow: Follow,
 
     // Changes on every invocation
@@ -129,7 +125,7 @@ fun computeRow(
             }
 
     // Place action for eof
-    if (endsInEof) actions[eofSpecialId] = Action.Done
+    if (endsInEof) actions[scheme.specialIdInfo.eofSpecialId] = Action.Done
 
     return Row(actions, goto)
 }
