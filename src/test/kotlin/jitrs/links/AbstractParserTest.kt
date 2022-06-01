@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 internal abstract class AbstractParserTest {
     fun testParse(input: String, expectedCst: String) {
         val grammar = Grammar.new(terminals(), nonTerminals(), rules)
-        myAssert(grammar.table.isUnambiguous())
+        myAssert(grammar.table.isUnambiguous)
 
         val cst = grammar.parseOne(input)
 
@@ -15,7 +15,7 @@ internal abstract class AbstractParserTest {
 
     fun testParses(input: String, expectedCsts: Array<String>) {
         val grammar = Grammar.new(terminals(), nonTerminals(), rules)
-        myAssert(!grammar.table.isUnambiguous())
+        myAssert(!grammar.table.isUnambiguous)
 
         val csts = grammar.parse(input)
 

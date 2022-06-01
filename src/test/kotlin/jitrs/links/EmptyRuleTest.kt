@@ -11,7 +11,7 @@ internal class EmptyRuleTest : AbstractParserTest() {
     @Test
     fun testParse() {
         val grammar = Grammar.new(terminals(), nonTerminals(), rules)
-        myAssert(grammar.table.isUnambiguous())
+        myAssert(grammar.table.isUnambiguous)
 
         val cst = grammar.parseOne("a a a b")
         println(cst.toString(grammar.scheme))

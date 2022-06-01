@@ -17,9 +17,11 @@ data class Table(
         return map.joinToString(separator = ",\n") { it.toString() }
     }
 
-    fun isUnambiguous(): Boolean = map.all { row ->
-        row.action.all { action ->
-            action !is Action.Fork
+    val isUnambiguous: Boolean by lazy {
+        map.all { row ->
+            row.action.all { action ->
+                action !is Action.Fork
+            }
         }
     }
 
