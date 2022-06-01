@@ -1,6 +1,7 @@
 package jitrs.links.tablegen
 
 import jitrs.links.Cst
+import jitrs.links.tokenizer.Scheme
 
 typealias TerminalId = Int
 typealias NonTerminalId = Int
@@ -41,11 +42,16 @@ data class Table(
 }
 
 data class Row(
+    val itemSets: Array<String>,
     // key is jitrs.links.TerminalId
     val action: Array<Action>,
     // key is jitrs.links.NonTerminalId
     val goto: Array<StateId>,
 ) {
+    override fun toString(): String {
+        return "${action.contentToString()} ${goto.contentToString()}"
+    }
+
     // Generated
 
     override fun equals(other: Any?): Boolean {
@@ -156,10 +162,16 @@ data class SymbolArray<T>(
 }
 
 sealed class Symbol {
-    data class Terminal(val id: TerminalId) : Symbol()
-    data class NonTerminal(val id: NonTerminalId) : Symbol()
+    data class Terminal(val id: TerminalId) : Symbol() {
+        override fun toString(scheme: Scheme): String = scheme.map.terminals[id]
+    }
+    data class NonTerminal(val id: NonTerminalId) : Symbol() {
+        override fun toString(scheme: Scheme): String = scheme.map.nonTerminals[id]
+    }
 
     fun compareWithNode(cst: Cst): Boolean =
         ((this as? Terminal)?.id == (cst as? Cst.Leaf)?.token?.id) ||
                 ((this as? NonTerminal)?.id == (cst as? Cst.Node)?.id)
+
+    abstract fun toString(scheme: Scheme): String
 }

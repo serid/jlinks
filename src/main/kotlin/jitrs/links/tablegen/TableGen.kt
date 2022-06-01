@@ -52,6 +52,7 @@ fun generateTable(scheme: Scheme, rules: Rules): Table {
                 scheme = scheme,
                 rules = rules,
                 follow = follow,
+                sourceSet = sourceSet,
                 visitedSets = visitedSets,
                 newStateId = rows.size,
                 reachableSets = reachableSets,
@@ -73,6 +74,7 @@ fun computeRow(
     follow: Follow,
 
     // Changes on every invocation
+    sourceSet: ItemSet,
     visitedSets: ArrayList<ItemSet>,
 
     // Info specific to an item set
@@ -127,7 +129,12 @@ fun computeRow(
     // Place action for eof
     if (endsInEof) actions[scheme.specialIdInfo.eofSpecialId] = Action.Done
 
-    return Row(actions, goto)
+    // Debug info
+    val itemSets = sourceSet
+        .map { it.toString(scheme, rules) }
+        .toTypedArray()
+
+    return Row(itemSets, actions, goto)
 }
 
 /**
@@ -184,4 +191,19 @@ data class Item(
         if (index < rules[ruleId].rhs.size)
             rules[ruleId].rhs[index]
         else null
+
+    fun toString(scheme: Scheme, rules: Rules): String {
+        val rule = rules[ruleId]
+
+        val rhs = rule.rhs.asSequence()
+            .withIndex()
+            .joinToString (" ") { (i, symbol) ->
+                if (i == index)
+                    "█" + symbol.toString(scheme)
+                else
+                    symbol.toString(scheme)
+            }
+
+        return "${scheme.map.nonTerminals[rule.lhs]} -> $rhs"
+    }
 }
