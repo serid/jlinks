@@ -59,7 +59,7 @@ private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: E
 
         for (rule in rules) {
             // Only match rules with target id
-            if (rule.lhs != target) continue
+            if (rule.lhs != target || rule.rhs.isEmpty()) continue
 
             val index = if (leftmostOrRightMost == leftmost) 0 else rule.rhs.size - 1
             when (val extreme = rule.rhs[index]) {
