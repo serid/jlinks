@@ -64,7 +64,7 @@ data class SpecialIdInfo(
             var newlineSpecialId: TerminalId = -1
             for ((i, str) in terminals.withIndex()) when (str) {
                 "<int>" -> intSpecialId = i
-                "<id>" -> identSpecialId = i
+                "<ident>" -> identSpecialId = i
                 "<string>" -> stringSpecialId = i
                 "<eof>" -> eofSpecialId = i
                 "<nl>" -> newlineSpecialId = i

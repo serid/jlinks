@@ -3,7 +3,7 @@ package jitrs.links.tokenizer
 import jitrs.links.tablegen.TerminalId
 import jitrs.util.matchPrefix
 
-// Terminals "<int>", "<id>", "<string>", "<eof>" and "<nl>" have special meaning for the tokenizer.
+// Terminals "<int>", "<ident>", "<string>", "<eof>" and "<nl>" have special meaning for the tokenizer.
 // Use escape prefix $ to treat them as normal lexemes.
 fun tokenize(
     terminals: Array<String>,

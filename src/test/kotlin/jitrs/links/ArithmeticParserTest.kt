@@ -17,7 +17,7 @@ internal class ArithmeticParserTest {
         assertEquals("((10 + (20 * 30)) + 40)", actual)
     }
 
-    private fun terminals(): Array<String> = arrayOf("<int>", "<id>", "*", "+", "<eof>")
+    private fun terminals(): Array<String> = arrayOf("<int>", "<ident>", "*", "+", "<eof>")
 
     private fun nonTerminals(): Array<String> = arrayOf("Goal", "Sums", "Products", "Value")
 
@@ -29,7 +29,7 @@ internal class ArithmeticParserTest {
     Products -> Products * Value
     Products -> Value
     Value -> <int>
-    Value -> <id>
+    Value -> <ident>
 """
 
 

@@ -11,7 +11,7 @@ internal class TokenizerTest {
     fun tokenizerTest() {
         val scheme = Scheme.new(
             SymbolArray(
-                arrayOf("<int>", "<id>", "<string>", "<eof>"),
+                arrayOf("<int>", "<ident>", "<string>", "<eof>"),
                 arrayOf()
             )
         )
@@ -25,6 +25,6 @@ internal class TokenizerTest {
 
         val actual = tokens.joinToString(",") { it.toString(scheme) }
 
-        assertEquals("(<id>:abc),(<string>:\"doeg\"),(<int>:10),<eof>", actual)
+        assertEquals("(<ident>:abc),(<string>:\"doeg\"),(<int>:10),<eof>", actual)
     }
 }
