@@ -9,5 +9,6 @@ fun matchPrefix(string: String, from: Int, prefix: String): Boolean {
 }
 
 fun myAssert(condition: Boolean) {
-    if (!condition) throw AssertionError("Assertion failed")
+    if (!condition)
+        throw AssertionError("Assertion failed")
 }
