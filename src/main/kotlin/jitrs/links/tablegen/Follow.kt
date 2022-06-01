@@ -51,7 +51,7 @@ private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: E
     fun visitNonTerminal(target: NonTerminalId) {
         // Prevent infinite recursion
         if (visited[target])
-            throw RuntimeException("loop i think")
+            throw Error("loop i think")
         visited[target] = true
 
         val localResult = mutableSetOf<Symbol>()

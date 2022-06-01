@@ -79,6 +79,7 @@ data class SpecialIdInfo(
 data class Token(
     val id: TerminalId,
     val data: Any, // Int | String | Unit. Interpretation depends on id
+    val span: Span
 ) {
     init {
         myAssert(data is Int || data is String || data is Unit)
@@ -98,4 +99,11 @@ data class Token(
             "($s:$s2)"
         }
     }
+}
+
+data class Span(
+    val start: Int,
+    val end: Int
+) {
+    override fun toString(): String = "$start:$end"
 }

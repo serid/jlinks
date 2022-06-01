@@ -43,8 +43,7 @@ fun metaParse(scheme: Scheme, string: String): Rules {
         .filter { (id, _) -> id != newLineId && id != arrowId }
         .map { (_, symbol) -> symbol }.requireNoNulls()
 
-    val tokens0 = tokenize(language, SpecialIdInfo.from(language), string)
-    val tokenIds = tokens0.asSequence().map { it.id }.iterator()
+    val tokens = tokenize(language, SpecialIdInfo.from(language), string)
 
     // State machine for parsing rules
     val stateLhs = 0 // Reading lhs
@@ -55,13 +54,16 @@ fun metaParse(scheme: Scheme, string: String): Rules {
     val rules = ArrayList<Rule>()
     var lhs: NonTerminalId = -1
     val rhs = ArrayList<Symbol>()
-    for (tokenId in tokenIds) {
+    for ((tokenId, _, span) in tokens) {
         when (state) {
             stateLhs -> {
                 if (tokenId == newLineId || tokenId == metaEofId) continue
                 when (val lhs0 = backMap[tokenId]) {
                     is Symbol.NonTerminal -> lhs = lhs0.id
-                    else -> throw RuntimeException("Expected rule lhs")
+                    is Symbol.Terminal -> throw SyntaxErrorException(
+                        "Expected rule lhs, found ${language[tokenId]}",
+                        span
+                    )
                 }
                 state = stateArrow
             }
@@ -70,8 +72,8 @@ fun metaParse(scheme: Scheme, string: String): Rules {
                 when (tokenId) {
                     arrowId -> {
                     }
-                    metaEofId -> throw RuntimeException("Expected arrow, found eof")
-                    else -> throw RuntimeException("Expected arrow, found terminal")
+                    metaEofId -> throw SyntaxErrorException("Expected arrow, found eof", span)
+                    else -> throw SyntaxErrorException("Expected arrow, found terminal", span)
                 }
                 state = stateRhs
             }

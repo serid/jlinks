@@ -124,7 +124,7 @@ fun computeRow(
                     is Action.Error -> actions[id] = Action.Just(newStackAction)
                     is Action.Just -> actions[id] = Action.Fork(arrayOf(targetAction.action, newStackAction))
                     is Action.Fork -> actions[id] = Action.Fork(targetAction.actions + newStackAction)
-                    else -> throw RuntimeException("Otheraction-reduce conflict")
+                    else -> throw Error("Done-reduce conflict")
                 }
             }
 

@@ -30,7 +30,7 @@ fun tokenize(
 
         // Try lexemes
         for ((id, lexeme) in lexemeTerminals) if (matchPrefix(string, i, lexeme)) {
-            result.add(Token(id, Unit))
+            result.add(Token(id, Unit, Span(i, i + lexeme.length)))
             i += lexeme.length
             continue@outer
         }
@@ -38,37 +38,45 @@ fun tokenize(
         // Try specials
         when {
             specialIdInfo.intSpecialId != -1 && Character.isDigit(string[i]) -> {
+                val start = i
+
                 var n = 0
                 while (i < string.length && Character.isDigit(string[i])) {
                     n *= 10
                     n += string[i].digitToInt()
                     i++
                 }
-                result.add(Token(specialIdInfo.intSpecialId, n))
+                result.add(Token(specialIdInfo.intSpecialId, n, Span(start, i)))
             }
             specialIdInfo.identSpecialId != -1 && identStartPredicate(string[i]) -> {
+                val start = i
+
                 val s = StringBuilder()
                 do {
                     s.append(string[i])
                     i++
                 } while (i < string.length && identPartPredicate(string[i]))
-                result.add(Token(specialIdInfo.identSpecialId, s.toString()))
+                result.add(Token(specialIdInfo.identSpecialId, s.toString(), Span(start, i)))
             }
             specialIdInfo.stringSpecialId != -1 && string[i] == '"' -> {
+                val start = i
+
                 i++
                 val s = StringBuilder()
                 while (i < string.length && string[i] != '"') {
                     s.append(string[i])
                     i++
                 }
-                if (i == string.length && string[i - 1] != '"') throw RuntimeException("expected ending quote")
-                result.add(Token(specialIdInfo.stringSpecialId, s.toString()))
+                if (i == string.length && string[i - 1] != '"')
+                    throw SyntaxErrorException("Expected ending quote", Span(i, i))
                 i++
+
+                result.add(Token(specialIdInfo.stringSpecialId, s.toString(), Span(start, i)))
             }
-            else -> throw RuntimeException("Unrecognized token")
+            else -> throw SyntaxErrorException("Unrecognized token", Span(i, i))
         }
     }
-    result.add(Token(specialIdInfo.eofSpecialId, Unit))
+    result.add(Token(specialIdInfo.eofSpecialId, Unit, Span(i, i)))
 
     return result.toTypedArray()
 }

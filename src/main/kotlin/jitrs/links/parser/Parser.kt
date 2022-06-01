@@ -2,6 +2,8 @@ package jitrs.links.parser
 
 import jitrs.links.Cst
 import jitrs.links.tablegen.*
+import jitrs.links.tokenizer.Scheme
+import jitrs.links.tokenizer.SyntaxErrorException
 import jitrs.links.tokenizer.Token
 import jitrs.util.ArrayIterator
 import jitrs.util.myAssert
@@ -11,6 +13,7 @@ import jitrs.util.myAssert
  * If `returnFirstParse` is `true`, parsing ends after finding first successful parse tree.
  */
 fun parse(
+    scheme: Scheme,
     table: Table,
     rules: Rules,
     tokens: ArrayIterator<Token>,
@@ -18,10 +21,11 @@ fun parse(
     debug: Boolean
 ): Array<Cst> {
     val results = ArrayList<Cst>()
+    val errors = ArrayList<SyntaxErrorException>()
 
     val processes: ArrayList<PProcess> = arrayListOf(
         // Initial process
-        PProcess(table, rules, tokens, debug)
+        PProcess(scheme, table, rules, tokens, debug)
     )
 
     val newProcesses = ArrayList<PProcess>()
@@ -32,7 +36,10 @@ fun parse(
             when (val isDone = process.step(newProcesses)) {
                 is StepResult.Pending -> {
                 }
-                is StepResult.Error -> iterator.remove()
+                is StepResult.Error -> {
+                    iterator.remove()
+                    errors.add(isDone.error)
+                }
                 is StepResult.Done -> {
                     results.add(isDone.result)
                     if (returnFirstParse)
@@ -44,17 +51,23 @@ fun parse(
         newProcesses.clear()
     }
 
+    if (results.isEmpty() && errors.isNotEmpty()) {
+        val err = errors.joinToString("\n")
+        throw RuntimeException("Syntax errors:\n$err")
+    }
+
     return results.toTypedArray()
 }
 
-fun parseOne(table: Table, rules: Rules, tokens: ArrayIterator<Token>, debug: Boolean): Cst {
-    return parse(table, rules, tokens, returnFirstParse = true, debug = debug)[0]
+fun parseOne(scheme: Scheme, table: Table, rules: Rules, tokens: ArrayIterator<Token>, debug: Boolean): Cst {
+    return parse(scheme, table, rules, tokens, returnFirstParse = true, debug = debug)[0]
 }
 
 /**
  * State of a parsing process
  */
 class PProcess private constructor(
+    private val scheme: Scheme, // immutable
     private val table: Table, // immutable
     private val rules: Rules, // immutable
     private val tokens: ArrayIterator<Token>,
@@ -65,11 +78,13 @@ class PProcess private constructor(
     private val stateStack: ArrayList<StateId>,
 ) {
     constructor(
+        scheme: Scheme,
         table: Table,
         rules: Rules,
         tokens: ArrayIterator<Token>,
         debug: Boolean,
     ) : this(
+        scheme,
         table,
         rules,
         tokens,
@@ -102,8 +117,14 @@ class PProcess private constructor(
                 StepResult.Pending
             }
             is Action.Error -> {
-                // TODO: when all processes fail, program should report an error
-                StepResult.Error
+                val actual = this.scheme.map.terminals[this.lookahead.id]
+                val expected = this.table.map[this.stateStack.last()].action.asSequence()
+                    .withIndex()
+                    .filter { (_, action) -> action !is Action.Error }
+                    .map { (id, _) -> "`${this.scheme.map.terminals[id]}`" }
+                    .joinToString(", ")
+
+                StepResult.Error(SyntaxErrorException("Expected one of $expected, found $actual", this.lookahead.span))
             }
             is Action.Done -> {
                 this.stateStack.removeLast()
@@ -158,6 +179,7 @@ class PProcess private constructor(
 
     @Suppress("UNCHECKED_CAST")
     private fun fork(): PProcess = PProcess(
+        scheme,
         table,
         rules,
         tokens.clone(),
@@ -170,6 +192,6 @@ class PProcess private constructor(
 
 sealed class StepResult {
     object Pending : StepResult()
-    object Error : StepResult()
+    data class Error(val error: SyntaxErrorException) : StepResult()
     data class Done(val result: Cst) : StepResult()
 }
