@@ -1,6 +1,5 @@
 package jitrs.links
 
-import jitrs.util.myAssert
 import org.junit.jupiter.api.Test
 
 /**
@@ -10,11 +9,7 @@ import org.junit.jupiter.api.Test
 internal class EmptyRuleTest : AbstractParserTest() {
     @Test
     fun testParse() {
-        val grammar = Grammar.new(terminals(), nonTerminals(), rules)
-        myAssert(grammar.table.isUnambiguous)
-
-        val cst = grammar.parseOne("a a a b")
-        println(cst.toString(grammar.scheme))
+        testParse("a a a b", "Rules:1[Many:2[a,Many:2[a,Many:2[a,Many:3[]]]],b]")
     }
 
     override fun terminals(): Array<String> = arrayOf("a", "b", "<eof>")
