@@ -29,7 +29,7 @@ class SyntaxErrorException(
             numberOfArrows = 1
         } else {
             line1Start = source1.lastIndexOf('\n', span2.start)
-            if (line1Start == -1) line1Start = source1.length
+            if (line1Start == -1) line1Start = 0
             else line1Start++
 
             line1End = source1.indexOf('\n', span2.start + 1)
