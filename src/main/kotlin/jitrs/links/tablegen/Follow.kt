@@ -44,17 +44,14 @@ fun computeFollowMap(scheme: Scheme, rules: Rules): Follow {
  */
 private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: Extreme): Array<Array<Symbol>> {
     // Key is NonTerminalId
-    val result = Array<Array<Symbol>?>(scheme.map.nonTerminals.size) { null }
+    val result = Array<MutableSet<Symbol>>(scheme.map.nonTerminals.size) { mutableSetOf() }
     // Key is NonTerminalId
     val visited = Array(scheme.map.nonTerminals.size) { false }
 
     fun visitNonTerminal(target: NonTerminalId) {
-        // Prevent infinite recursion
-        if (visited[target])
-            throw Error("loop i think")
         visited[target] = true
 
-        val localResult = mutableSetOf<Symbol>()
+        val localResult = result[target]
         localResult.add(Symbol.NonTerminal(target))
 
         for (rule in rules) {
@@ -66,16 +63,15 @@ private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: E
                 is Symbol.Terminal -> localResult.add(Symbol.Terminal(extreme.id))
                 is Symbol.NonTerminal -> {
                     localResult.add(Symbol.NonTerminal(extreme.id))
-                    // Not interested in self-recursive rules
-                    if (extreme.id == target) continue
-                    // If result for this NonTerminal is not present yet, compute it
-                    if (result[extreme.id] == null) visitNonTerminal(extreme.id)
-                    localResult.addAll(result[extreme.id]!!)
+                    // Recurse if not visited
+                    if (!visited[extreme.id]) {
+                        visitNonTerminal(extreme.id)
+                    }
+                    // If result for this NonTerminal is present, add it
+                    localResult.addAll(result[extreme.id])
                 }
             }
         }
-
-        result[target] = localResult.toTypedArray()
     }
 
     // Run tree traversal for each nonterminal
@@ -83,10 +79,11 @@ private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: E
         visitNonTerminal(id)
 
         // Clear array after each traversal
+        // TODO: this hurts perfomance, someone should investigate whether this line is needed
         for (i in visited.indices) visited[i] = false
     }
 
-    return result.requireNoNulls()
+    return result.map { it.toTypedArray() }.toTypedArray()
 }
 
 typealias Extreme = Boolean
