@@ -37,9 +37,14 @@ fun computeFollowMap(scheme: Scheme, rules: Rules): Follow {
  * Compute leftmost/rightmost symbols in each nonterminal
  * @return key is NonTerminalId
  */
-private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: Extreme): Array<Array<Symbol>> {
+private fun computeExtremes(
+    scheme: Scheme,
+    rules: Rules,
+    leftmostOrRightMost: Extreme
+): Array<Array<TerminalOrNonTerminalId>> {
+    // Exact type of TerminalOrNonTerminalId depends on leftMostOrRightMost
     // Key is NonTerminalId
-    val result = Array<MutableSet<Symbol>>(scheme.map.nonTerminals.size) { mutableSetOf() }
+    val result = Array<MutableSet<TerminalOrNonTerminalId>>(scheme.map.nonTerminals.size) { mutableSetOf() }
     // Key is NonTerminalId
     val visited = Array(scheme.map.nonTerminals.size) { false }
 
@@ -47,7 +52,7 @@ private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: E
         visited[target] = true
 
         val localResult = result[target]
-        localResult.add(Symbol.NonTerminal(target))
+        if (leftmostOrRightMost == rightmost) localResult.add(target)
 
         for (rule in rules) {
             // Only match rules with target id
@@ -55,9 +60,13 @@ private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: E
 
             val index = if (leftmostOrRightMost == leftmost) 0 else rule.rhs.size - 1
             when (val extreme = rule.rhs[index]) {
-                is Symbol.Terminal -> localResult.add(Symbol.Terminal(extreme.id))
+                is Symbol.Terminal -> {
+                    if (leftmostOrRightMost == leftmost)
+                        localResult.add(extreme.id)
+                }
                 is Symbol.NonTerminal -> {
-                    localResult.add(Symbol.NonTerminal(extreme.id))
+                    if (leftmostOrRightMost == rightmost)
+                        localResult.add(extreme.id)
                     // Recurse if not visited
                     if (!visited[extreme.id]) {
                         visitNonTerminal(extreme.id)
@@ -86,27 +95,21 @@ typealias Extreme = Boolean
 const val leftmost = false
 const val rightmost = true
 
+typealias TerminalOrNonTerminalId = Int
+
 /**
  * Compute leftmost terminals in each nonterminal
  * @return key is NonTerminalId
  */
 private fun computeInitials(scheme: Scheme, rules: Rules): Array<Array<TerminalId>> =
-    computeExtremes(scheme, rules, leftmost).map {
-        it.asSequence()
-            .filter { symbol -> symbol is Symbol.Terminal }
-            .map { symbol -> (symbol as Symbol.Terminal).id }.toList().toTypedArray()
-    }.toTypedArray()
+    computeExtremes(scheme, rules, leftmost)
 
 /**
  * Compute rightmost symbols in each nonterminal
  * @return key is NonTerminalId
  */
 private fun computeFinals(scheme: Scheme, rules: Rules): Array<Array<NonTerminalId>> =
-    computeExtremes(scheme, rules, rightmost).map {
-        it.asSequence()
-            .filter { symbol -> symbol is Symbol.NonTerminal }
-            .map { symbol -> (symbol as Symbol.NonTerminal).id }.toList().toTypedArray()
-    }.toTypedArray()
+    computeExtremes(scheme, rules, rightmost)
 
 fun mustBeAdded(rules: Rules, follow: Follow, ruleId: RuleId, lookahead: TerminalId): Boolean {
     val symbol = rules[ruleId].lhs
