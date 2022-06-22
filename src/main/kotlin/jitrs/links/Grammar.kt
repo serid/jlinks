@@ -9,7 +9,6 @@ import jitrs.links.tokenizer.Scheme
 import jitrs.links.tokenizer.tokenize
 import jitrs.util.ArrayIterator
 
-@Suppress("MemberVisibilityCanBePrivate")
 class Grammar private constructor(
     val scheme: Scheme,
     val rules: Rules,
