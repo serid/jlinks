@@ -28,3 +28,13 @@ tasks.withType<KotlinCompile> {
 application {
     mainClass.set("MainKt")
 }
+
+// My configuration for building jar file
+tasks.withType<Jar> {
+    manifest {
+        this.attributes["Main-Class"] = "jitrs.links.MainKt"
+    }
+    from(configurations.compileClasspath.get().map { if (it.isDirectory) it else zipTree(it) }) {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
+}
