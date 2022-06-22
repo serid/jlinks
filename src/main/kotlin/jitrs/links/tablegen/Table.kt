@@ -1,6 +1,6 @@
 package jitrs.links.tablegen
 
-import jitrs.links.Cst
+import jitrs.links.Pt
 import jitrs.links.tokenizer.Scheme
 
 typealias TerminalId = Int
@@ -172,9 +172,9 @@ sealed class Symbol {
         override fun toString(scheme: Scheme): String = scheme.map.nonTerminals[id]
     }
 
-    fun compareWithNode(cst: Cst): Boolean =
-        ((this as? Terminal)?.id == (cst as? Cst.Leaf)?.token?.id) ||
-                ((this as? NonTerminal)?.id == (cst as? Cst.Node)?.id)
+    fun compareWithNode(pt: Pt): Boolean =
+        ((this as? Terminal)?.id == (pt as? Pt.Leaf)?.token?.id) ||
+                ((this as? NonTerminal)?.id == (pt as? Pt.Node)?.id)
 
     abstract fun toString(scheme: Scheme): String
 }

@@ -1,7 +1,7 @@
 package jitrs.links
 
-import jitrs.links.parser.AutoAst
-import jitrs.links.parser.CstToAst
+import jitrs.links.parser.AutoCst
+import jitrs.links.parser.PtToCst
 import jitrs.links.parser.getContainingClassOrPackageName
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -13,23 +13,23 @@ internal class CalcTest {
 
         val grammar = Grammar.new(terminals(), nonTerminals(), rules)
 
-        val treeRewriter = CstToAst.new(grammar.scheme, grammar.rules, containerName)
+        val treeRewriter = PtToCst.new(grammar.scheme, grammar.rules, containerName)
 
         val s = "10 + 20 * 30 + 40"
         val cst = grammar.parseOne(s)
-        val actual = sumsToExpr(treeRewriter.cstToAst(cst as Cst.Node) as Sums)
+        val actual = sumsToExpr(treeRewriter.convert(cst as Pt.Node) as Sums)
         assertEquals(650, reduce(actual))
     }
 
     // Intermediate tree type produced by parser
 
-    sealed class Goal : AutoAst() {
+    sealed class Goal : AutoCst() {
         data class Goal1(
             val sums1: Sums
         ) : Goal()
     }
 
-    sealed class Sums : AutoAst() {
+    sealed class Sums : AutoCst() {
         data class Sums1(
             val sums1: Sums,
             val products1: Products
@@ -40,7 +40,7 @@ internal class CalcTest {
         ) : Sums()
     }
 
-    sealed class Products : AutoAst() {
+    sealed class Products : AutoCst() {
         data class Products1(
             val products1: Products,
             val int1: Int
@@ -51,7 +51,7 @@ internal class CalcTest {
         ) : Products()
     }
 
-    // Last AST type
+    // AST type
     sealed class Expr {
         data class Expr1(
             val int1: Int

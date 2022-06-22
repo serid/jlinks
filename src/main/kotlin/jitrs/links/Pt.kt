@@ -5,17 +5,17 @@ import jitrs.links.tablegen.RuleId
 import jitrs.links.tokenizer.Scheme
 import jitrs.links.tokenizer.Token
 
-// Generic syntax tree for results of parsing
-sealed class Cst {
+// Generic parse tree for results of parsing
+sealed class Pt {
     data class Leaf(
         val token: Token
-    ) : Cst()
+    ) : Pt()
 
     data class Node(
         val id: NonTerminalId,
         val ruleId: RuleId,
-        val children: Array<Cst>,
-    ) : Cst()
+        val children: Array<Pt>,
+    ) : Pt()
 
     fun toString(scheme: Scheme): String {
         return when (this) {

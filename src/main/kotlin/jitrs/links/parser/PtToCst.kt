@@ -1,6 +1,6 @@
 package jitrs.links.parser
 
-import jitrs.links.Cst
+import jitrs.links.Pt
 import jitrs.links.tablegen.Rules
 import jitrs.links.tablegen.Symbol
 import jitrs.links.tokenizer.Scheme
@@ -8,27 +8,27 @@ import java.lang.reflect.Constructor
 
 fun getContainingClassOrPackageName(clazz: Class<*>): String = clazz.name.removeSuffix(clazz.simpleName)
 
-class CstToAst private constructor(
+class PtToCst private constructor(
     private val scheme: Scheme,
 
     private val reflectionInfo: ReflectionInfo
 ) {
-    // TODO: This block of code can be invoked straight from parser bypassing Cst stage.
+    // TODO: This block of code can be invoked straight from parser bypassing ParseTree stage.
     // Not sure if such implementation would be faster
-    fun cstToAst(cst: Cst.Node): AutoAst {
-        val args = cst.children.asSequence()
+    fun convert(pt: Pt.Node): AutoCst {
+        val args = pt.children.asSequence()
             // Filter out terminals without data
-            .filter { child -> child !is Cst.Leaf || scheme.specialIdInfo.isTerminalWithData(child.token.id) }
+            .filter { child -> child !is Pt.Leaf || scheme.specialIdInfo.isTerminalWithData(child.token.id) }
             // Map children
             .map { child ->
                 when (child) {
-                    is Cst.Leaf -> child.token.data
-                    is Cst.Node -> cstToAst(child)
+                    is Pt.Leaf -> child.token.data
+                    is Pt.Node -> convert(child)
                 }
             }.toList().toTypedArray()
 
-        val constructor = reflectionInfo[cst.ruleId]
-        return constructor.newInstance(*args) as AutoAst
+        val constructor = reflectionInfo[pt.ruleId]
+        return constructor.newInstance(*args) as AutoCst
     }
 
     companion object {
@@ -36,7 +36,7 @@ class CstToAst private constructor(
             scheme: Scheme,
             rules: Rules,
             containerName: String,
-        ): CstToAst {
+        ): PtToCst {
             // Find class for each NonTerminalId
             val nonTerminalClasses0 = Array<Class<*>?>(scheme.map.nonTerminals.size) { null }
             for ((id, name) in scheme.map.nonTerminals.withIndex()) {
@@ -77,7 +77,7 @@ class CstToAst private constructor(
 
             val reflectionInfo = reductionInfo.requireNoNulls()
 
-            return CstToAst(scheme, reflectionInfo)
+            return PtToCst(scheme, reflectionInfo)
         }
     }
 }
@@ -93,4 +93,4 @@ typealias ReductionInfo = Constructor<*>
 /**
  * Abstract class for trees used in parsing
  */
-abstract class AutoAst
+abstract class AutoCst

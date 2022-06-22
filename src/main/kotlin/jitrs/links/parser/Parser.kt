@@ -1,6 +1,6 @@
 package jitrs.links.parser
 
-import jitrs.links.Cst
+import jitrs.links.Pt
 import jitrs.links.tablegen.*
 import jitrs.links.tokenizer.Scheme
 import jitrs.links.tokenizer.SyntaxErrorException
@@ -21,8 +21,8 @@ fun parse(
     source: String,
     returnFirstParse: Boolean,
     debug: Boolean
-): Array<Cst> {
-    val results = ArrayList<Cst>()
+): Array<Pt> {
+    val results = ArrayList<Pt>()
     val errors = ArrayList<SyntaxErrorException>()
 
     val processes: ArrayList<PProcess> = arrayListOf(
@@ -77,7 +77,7 @@ class PProcess private constructor(
     private val debug: Boolean, // immutable
 
     private var lookahead: Token,
-    private val cstStack: ArrayList<Cst>,
+    private val ptStack: ArrayList<Pt>,
     private val stateStack: ArrayList<StateId>,
 ) {
     constructor(
@@ -145,16 +145,16 @@ class PProcess private constructor(
                 if (debug) {
                     myAssert(stateStack.size == 1)
                     myAssert(stateStack.last() == 0)
-                    myAssert(cstStack.size == 1)
+                    myAssert(ptStack.size == 1)
                 }
-                StepResult.Done(this.cstStack.last())
+                StepResult.Done(this.ptStack.last())
             }
         }
 
     private fun invokeStackAction(stackAction: StackAction): SyntaxErrorException? {
         when (stackAction) {
             is StackAction.Shift -> {
-                this.cstStack.add(Cst.Leaf(this.lookahead))
+                this.ptStack.add(Pt.Leaf(this.lookahead))
                 this.stateStack.add(stackAction.state)
                 this.lookahead = this.tokens.next()
                 return null
@@ -165,17 +165,17 @@ class PProcess private constructor(
                 val rhsLength = rule.rhs.size
 
                 // remove nodes from stack
-                val poppedNodes0 = Array<Cst?>(rhsLength) { null }
+                val poppedNodes0 = Array<Pt?>(rhsLength) { null }
                 for (i in 0 until rhsLength) {
-                    poppedNodes0[rhsLength - i - 1] = this.cstStack.removeLast()
+                    poppedNodes0[rhsLength - i - 1] = this.ptStack.removeLast()
                     this.stateStack.removeLast() // also remove states
                 }
-                val poppedCsts = poppedNodes0.requireNoNulls()
+                val poppedPts = poppedNodes0.requireNoNulls()
 
                 // check that nodes from the stack match items expected by the rule
                 if (debug) {
                     rule.rhs.asSequence()
-                        .zip(poppedCsts.asSequence())
+                        .zip(poppedPts.asSequence())
                         .all { (expected, actual) -> expected.compareWithNode(actual) }
                 }
 
@@ -196,7 +196,7 @@ class PProcess private constructor(
                         span = this.lookahead.span
                     )
                 } else {
-                    this.cstStack.add(Cst.Node(lhsId, stackAction.id, poppedCsts))
+                    this.ptStack.add(Pt.Node(lhsId, stackAction.id, poppedPts))
                     this.stateStack.add(nextState)
 
                     return null
@@ -213,7 +213,7 @@ class PProcess private constructor(
         tokens.clone(),
         debug,
         lookahead,
-        cstStack.clone() as ArrayList<Cst>,
+        ptStack.clone() as ArrayList<Pt>,
         stateStack.clone() as ArrayList<StateId>
     )
 }
@@ -229,5 +229,5 @@ private fun upcastSyntaxError(error: SyntaxErrorException?, errors: ArrayList<Sy
 sealed class StepResult {
     object Pending : StepResult()
     object Error : StepResult()
-    data class Done(val result: Cst) : StepResult()
+    data class Done(val result: Pt) : StepResult()
 }

@@ -18,12 +18,12 @@ class Grammar private constructor(
     private val identPartPredicate: (Char) -> Boolean,
     private val debug: Boolean,
 ) {
-    fun parseMany(string: String): Array<Cst> {
+    fun parseMany(string: String): Array<Pt> {
         val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
         return parse(scheme, table, rules, ArrayIterator(tokens), string, returnFirstParse = false, debug)
     }
 
-    fun parseOne(string: String): Cst {
+    fun parseOne(string: String): Pt {
         val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
         return parse(scheme, table, rules, ArrayIterator(tokens), string, returnFirstParse = true, debug)[0]
     }

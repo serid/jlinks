@@ -13,7 +13,7 @@ internal class ArithmeticParserTest {
     fun testParse() {
         val grammar = Grammar.new(terminals(), nonTerminals(), rules)
 
-        val actual = cstToAst(grammar.scheme, grammar.parseOne("10 + 20 * 30 + 40")).toString()
+        val actual = ptToAst(grammar.scheme, grammar.parseOne("10 + 20 * 30 + 40")).toString()
         assertEquals("((10 + (20 * 30)) + 40)", actual)
     }
 
@@ -33,19 +33,19 @@ internal class ArithmeticParserTest {
 """
 
 
-    private fun cstToAst(scheme: Scheme, cst: Cst): Expr = when (cst) {
-        is Cst.Leaf -> when (cst.token.id) {
-            scheme.specialIdInfo.intSpecialId -> Expr.Num(cst.token.data as Int)
-            scheme.specialIdInfo.identSpecialId -> Expr.Ident(cst.token.data as String)
+    private fun ptToAst(scheme: Scheme, pt: Pt): Expr = when (pt) {
+        is Pt.Leaf -> when (pt.token.id) {
+            scheme.specialIdInfo.intSpecialId -> Expr.Num(pt.token.data as Int)
+            scheme.specialIdInfo.identSpecialId -> Expr.Ident(pt.token.data as String)
             else -> throw RuntimeException()
         }
-        is Cst.Node -> {
-            if (cst.children.size > 1) {
-                val id = (cst.children[1] as? Cst.Leaf)?.token?.id!!
+        is Pt.Node -> {
+            if (pt.children.size > 1) {
+                val id = (pt.children[1] as? Pt.Leaf)?.token?.id!!
                 val ch = scheme.map.terminals[id][0]
-                Expr.Binop(ch, cstToAst(scheme, cst.children[0]), cstToAst(scheme, cst.children[2]))
+                Expr.Binop(ch, ptToAst(scheme, pt.children[0]), ptToAst(scheme, pt.children[2]))
             } else {
-                cstToAst(scheme, cst.children[0])
+                ptToAst(scheme, pt.children[0])
             }
         }
     }
