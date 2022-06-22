@@ -9,23 +9,18 @@ fun computeFollowMap(scheme: Scheme, rules: Rules): Follow {
     val initials = computeInitials(scheme, rules)
     val finals = computeFinals(scheme, rules)
 
-    val follows = scheme.map.newOf { mutableSetOf<TerminalId>() }
+    val follows = Array<MutableSet<TerminalId>>(scheme.map.nonTerminals.size) { mutableSetOf() }
 
     for (rule in rules) {
         // Iterate over symbols without last one
         for (i in 0 until (rule.rhs.size - 1)) {
             // Match symbol for which follow map is computed
             val fromSymbolsFinals = when (val fromSymbol = rule.rhs[i]) {
-                is Symbol.Terminal -> sequenceOf(Symbol.Terminal(fromSymbol.id))
+                is Symbol.Terminal -> continue
                 is Symbol.NonTerminal -> finals[fromSymbol.id].asSequence()
             }
             // Select a set for each symbol in fromSymbol's finals
-            val setsToExtend = fromSymbolsFinals.map {
-                when (it) {
-                    is Symbol.Terminal -> follows.terminals[it.id]
-                    is Symbol.NonTerminal -> follows.nonTerminals[it.id]
-                }
-            }
+            val setsToExtend = fromSymbolsFinals.map { follows[it] }
             // Match symbol that follows
             when (val toSymbol = rule.rhs[i + 1]) {
                 is Symbol.Terminal -> setsToExtend.forEach { it.add(toSymbol.id) }
@@ -35,7 +30,7 @@ fun computeFollowMap(scheme: Scheme, rules: Rules): Follow {
         }
     }
 
-    return follows.map { it.toTypedArray() }
+    return follows.map { it.toTypedArray() }.toTypedArray()
 }
 
 /**
@@ -79,7 +74,7 @@ private fun computeExtremes(scheme: Scheme, rules: Rules, leftmostOrRightMost: E
         visitNonTerminal(id)
 
         // Clear array after each traversal
-        // TODO: this hurts perfomance, someone should investigate whether this line is needed
+        // TODO: this hurts performance, someone should investigate whether this line is needed
         for (i in visited.indices) visited[i] = false
     }
 
@@ -106,13 +101,17 @@ private fun computeInitials(scheme: Scheme, rules: Rules): Array<Array<TerminalI
  * Compute rightmost symbols in each nonterminal
  * @return key is NonTerminalId
  */
-private fun computeFinals(scheme: Scheme, rules: Rules): Array<Array<Symbol>> =
-    computeExtremes(scheme, rules, rightmost)
+private fun computeFinals(scheme: Scheme, rules: Rules): Array<Array<NonTerminalId>> =
+    computeExtremes(scheme, rules, rightmost).map {
+        it.asSequence()
+            .filter { symbol -> symbol is Symbol.NonTerminal }
+            .map { symbol -> (symbol as Symbol.NonTerminal).id }.toList().toTypedArray()
+    }.toTypedArray()
 
 fun mustBeAdded(rules: Rules, follow: Follow, ruleId: RuleId, lookahead: TerminalId): Boolean {
     val symbol = rules[ruleId].lhs
-    return follow.nonTerminals[symbol].contains(lookahead)
+    return follow[symbol].contains(lookahead)
 }
 
-
-typealias Follow = SymbolArray<Array<TerminalId>>
+// Key is NonTerminalId
+typealias Follow = Array<Array<TerminalId>>
