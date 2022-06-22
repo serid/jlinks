@@ -1,7 +1,6 @@
 package jitrs.links
 
 import jitrs.links.parser.parse
-import jitrs.links.parser.parseOne
 import jitrs.links.tablegen.Rules
 import jitrs.links.tablegen.SymbolArray
 import jitrs.links.tablegen.Table
@@ -19,14 +18,14 @@ class Grammar private constructor(
     private val identPartPredicate: (Char) -> Boolean,
     private val debug: Boolean,
 ) {
-    fun parseOne(string: String): Cst {
+    fun parseMany(string: String): Array<Cst> {
         val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
-        return parseOne(scheme, table, rules, ArrayIterator(tokens), string, debug)
+        return parse(scheme, table, rules, ArrayIterator(tokens), string, returnFirstParse = false, debug)
     }
 
-    fun parse(string: String): Array<Cst> {
+    fun parseOne(string: String): Cst {
         val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
-        return parse(scheme, table, rules, ArrayIterator(tokens), string, returnFirstParse = false, debug = debug)
+        return parse(scheme, table, rules, ArrayIterator(tokens), string, returnFirstParse = true, debug)[0]
     }
 
     companion object {

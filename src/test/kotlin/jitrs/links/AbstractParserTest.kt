@@ -17,7 +17,7 @@ internal abstract class AbstractParserTest {
         val grammar = Grammar.new(terminals(), nonTerminals(), rules)
         myAssert(!grammar.table.isUnambiguous)
 
-        val csts = grammar.parse(input)
+        val csts = grammar.parseMany(input)
 
         for ((expectedCst, cst) in expectedCsts.asSequence().zip(csts.asSequence()))
             assertEquals(expectedCst, cst.toString(grammar.scheme))

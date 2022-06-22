@@ -66,17 +66,6 @@ fun parse(
     return results.toTypedArray()
 }
 
-fun parseOne(
-    scheme: Scheme,
-    table: Table,
-    rules: Rules,
-    tokens: ArrayIterator<Token>,
-    source: String,
-    debug: Boolean
-): Cst {
-    return parse(scheme, table, rules, tokens, source, returnFirstParse = true, debug = debug)[0]
-}
-
 /**
  * State of a parsing process
  */
