@@ -1,4 +1,4 @@
-package jitrs.util
+package jitrs.datastructures
 
 sealed class PersistentList<T> {
     data class Cons<T>(val data: T, val tail: PersistentList<T>) : PersistentList<T>()
@@ -30,5 +30,25 @@ sealed class PersistentList<T> {
         }
     }
 }
+
+// Int is the list length
+typealias PersistentListWithLength<T> = PersistentList<Pair<Int, T>>
+
+object PlwlOperations {
+    fun <T> nil(): PersistentListWithLength<T> = PersistentList.Nil.getNil()
+
+    fun <T> cons(data: T, tail: PersistentListWithLength<T>): PersistentListWithLength<T> {
+        val len = tail.size()
+        return PersistentList.Cons(Pair(len + 1, data), tail)
+    }
+}
+
+fun <T> PersistentListWithLength<T>.size(): Int =
+    when (this) {
+        is PersistentList.Nil -> 0
+        is PersistentList.Cons -> this.data.first
+    }
+
+fun <T> PersistentListWithLength<T>.asDataSequence() = this.asSequence().map { (_, v) -> v }
 
 typealias PersistentMap<K, V> = PersistentList<Pair<K, V>>
