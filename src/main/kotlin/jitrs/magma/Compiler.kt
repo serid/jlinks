@@ -4,6 +4,9 @@ import jitrs.links.Grammar
 import jitrs.magma.infer.Expression
 import jitrs.magma.infer.Inference
 import jitrs.magma.infer.PolyType
+import jitrs.magma.syntax.Expr
+import jitrs.magma.syntax.cstToIr
+import jitrs.magma.syntax.grammar
 
 class Compiler private constructor(
     private val grammar: Grammar,

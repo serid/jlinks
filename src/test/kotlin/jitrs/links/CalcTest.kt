@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 internal class CalcTest {
     @Test
     fun calcTest() {
-        val containerName = getContainingClassOrPackageName(Expr::class.java)
+        val containerName = getContainingClassOrPackageName(Goal::class.java)
 
         val grammar = Grammar.new(terminals(), nonTerminals(), rules, containerName)
 

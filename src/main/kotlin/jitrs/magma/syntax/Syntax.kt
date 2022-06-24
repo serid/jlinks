@@ -1,4 +1,4 @@
-package jitrs.magma
+package jitrs.magma.syntax
 
 import jitrs.datastructures.PersistentList
 import jitrs.links.Grammar
@@ -11,32 +11,32 @@ fun cstToIr(cst: Expr): Expression = exprToIr(cst, PersistentList.Nil())
 fun exprToIr(expr: Expr, bindings: Bindings): Expression =
     when (expr) {
         is Expr.Application -> Expression.Application(exprToIr(expr.func, bindings), valueToIr(expr.arg, bindings))
-        is Expr.Val -> valueToIr(expr.value, bindings)
+        is Expr.Just -> valueToIr(expr.value, bindings)
     }
 
-fun valueToIr(value: Value, bindings: Bindings): Expression =
+fun valueToIr(value: Val, bindings: Bindings): Expression =
     when (value) {
-        is Value.Lambda -> {
+        is Val.Lambda -> {
             val newBindings = PersistentList.Cons(value.name, bindings)
             Expression.Lambda(exprToIr(value.body, newBindings))
         }
-        is Value.LetIn -> {
+        is Val.LetIn -> {
             val newBindings = PersistentList.Cons(value.name, bindings)
             Expression.LetIn(
                 exprToIr(value.func, bindings),
                 exprToIr(value.body, newBindings)
             )
         }
-        is Value.IfThenElse -> {
+        is Val.IfThenElse -> {
             Expression.IfThenElse(
                 exprToIr(value.cond, bindings),
                 exprToIr(value.aye, bindings),
                 exprToIr(value.nay, bindings)
             )
         }
-        is Value.Parens -> exprToIr(value.parenthesized, bindings)
-        is Value.Num -> Expression.IntConst(value.num)
-        is Value.Var -> {
+        is Val.Parens -> exprToIr(value.parenthesized, bindings)
+        is Val.Num -> Expression.IntConst(value.num)
+        is Val.Var -> {
             val variableNumber = bindings.asSequence().indexOf(value.name)
             // Compute de Bruijn index
             Expression.Var(variableNumber + 1)
@@ -52,23 +52,23 @@ sealed class Goal : AutoCst() {
 }
 
 sealed class Expr : AutoCst() {
-    data class Application(val func: Expr, val arg: Value) : Expr()
+    data class Application(val func: Expr, val arg: jitrs.magma.syntax.Val) : Expr()
 
-    data class Val(val value: Value) : Expr()
+    data class Just(val value: jitrs.magma.syntax.Val) : Expr()
 }
 
-sealed class Value : AutoCst() {
-    data class Lambda(val name: String, val body: Expr) : Value()
+sealed class Val : AutoCst() {
+    data class Lambda(val name: String, val body: Expr) : Val()
 
-    data class LetIn(val name: String, val func: Expr, val body: Expr) : Value()
+    data class LetIn(val name: String, val func: Expr, val body: Expr) : Val()
 
-    data class IfThenElse(val cond: Expr, val aye: Expr, val nay: Expr) : Value()
+    data class IfThenElse(val cond: Expr, val aye: Expr, val nay: Expr) : Val()
 
-    data class Parens(val parenthesized: Expr) : Value()
+    data class Parens(val parenthesized: Expr) : Val()
 
-    data class Num(val num: Int) : Value()
+    data class Num(val num: Int) : Val()
 
-    data class Var(val name: String) : Value()
+    data class Var(val name: String) : Val()
 }
 
 fun grammar(): Grammar {
@@ -76,7 +76,7 @@ fun grammar(): Grammar {
 
     return Grammar.new(
         arrayOf("fun", "=>", "<ident>", "<int>", "(", ")", "let", "=", "in", "if", "then", "else", "<eof>"),
-        arrayOf("Goal", "Expr", "Value"),
+        arrayOf("Goal", "Expr", "Val"),
         rules(),
         containerName,
         { Character.isJavaIdentifierStart(it) },
@@ -86,12 +86,12 @@ fun grammar(): Grammar {
 
 fun rules() = """
             Goal.Goal1 -> Expr <eof>
-            Expr.Application -> Expr Value
-            Expr.Val -> Value
-            Value.Lambda -> fun <ident> => Expr
-            Value.LetIn -> let <ident> = Expr in Expr
-            Value.IfThenElse -> if Expr then Expr else Expr
-            Value.Parens -> ( Expr )
-            Value.Num -> <int>
-            Value.Var -> <ident>
+            Expr.Application -> Expr Val
+            Expr.Just -> Val
+            Val.Lambda -> fun <ident> => Expr
+            Val.LetIn -> let <ident> = Expr in Expr
+            Val.IfThenElse -> if Expr then Expr else Expr
+            Val.Parens -> ( Expr )
+            Val.Num -> <int>
+            Val.Var -> <ident>
             """
