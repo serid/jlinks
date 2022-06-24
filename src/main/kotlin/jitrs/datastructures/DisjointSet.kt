@@ -22,7 +22,7 @@ class DisjointSetObject<T> private constructor(
         var root = this
         while (true) {
             root = root.parent ?: break
-            println("test")
+            println("path compression opportunity")
         }
 
         // TODO

@@ -92,9 +92,22 @@ class Inference private constructor(
             return randomNumberProvider.next()
 
         return when {
-            t0 is MonoType.Var -> right
-            t1 is MonoType.Var -> left
+            t0 is MonoType.Var -> {
+                occursCheck(t0, t1)
+                right
+            }
+            t1 is MonoType.Var -> {
+                occursCheck(t1, t0)
+                left
+            }
             else -> throw RuntimeException("Can not make union of $t0 and $t1")
+        }
+    }
+
+    private fun occursCheck(t0: MonoType.Var, t1: MonoType): Unit = when (t1) {
+        is MonoType.Var -> if (t1 === t0) throw OccursCheckException() else Unit
+        is MonoType.Application -> for (arg in t1.args) {
+            occursCheck(t0, arg.findData())
         }
     }
 

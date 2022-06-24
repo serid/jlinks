@@ -5,6 +5,7 @@ import jitrs.magma.Compiler
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertThrows
 import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -94,5 +95,14 @@ internal class InferenceKtTest {
         )
 
         assertEquals(expected, type)
+    }
+
+    @Test
+    fun occursCheckTest() {
+        val ir = compiler.getIr("fun x => x x")
+
+        assertThrows<OccursCheckException> {
+            compiler.infer(ir)
+        }
     }
 }
