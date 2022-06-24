@@ -15,6 +15,19 @@ fun myAssert(condition: Boolean) {
         throw AssertionError("Assertion failed")
 }
 
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T> ensureEqual(x: T, y: T): T {
+    myAssert(x == y)
+    return x
+}
+
+fun Int.toAlphabetChar(): Char {
+    val code = this + 'a'.code
+    if (code > 'z'.code || code < 'a'.code)
+        throw IllegalArgumentException()
+    return code.toChar()
+}
+
 fun printGCStats() {
     var totalGarbageCollections: Long = 0
     var garbageCollectionTime: Long = 0
