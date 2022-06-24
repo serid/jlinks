@@ -1,7 +1,6 @@
 package jitrs.links
 
 import jitrs.links.parser.AutoCst
-import jitrs.links.parser.PtToCst
 import jitrs.links.parser.getContainingClassOrPackageName
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -11,13 +10,10 @@ internal class CalcTest {
     fun calcTest() {
         val containerName = getContainingClassOrPackageName(Expr::class.java)
 
-        val grammar = Grammar.new(terminals(), nonTerminals(), rules)
-
-        val treeRewriter = PtToCst.new(grammar.scheme, grammar.rules, containerName)
+        val grammar = Grammar.new(terminals(), nonTerminals(), rules, containerName)
 
         val s = "10 + 20 * 30 + 40"
-        val cst = grammar.parseOne(s)
-        val actual = sumsToExpr(treeRewriter.convert(cst as Pt.Node) as Sums)
+        val actual = sumsToExpr(grammar.parseOneCst(s) as Sums)
         assertEquals(650, reduce(actual))
     }
 
@@ -30,23 +26,23 @@ internal class CalcTest {
     }
 
     sealed class Sums : AutoCst() {
-        data class Sums1(
+        data class Cons(
             val sums1: Sums,
             val products1: Products
         ) : Sums()
 
-        data class Sums2(
+        data class Term(
             val products1: Products
         ) : Sums()
     }
 
     sealed class Products : AutoCst() {
-        data class Products1(
+        data class Cons(
             val products1: Products,
             val int1: Int
         ) : Products()
 
-        data class Products2(
+        data class Term(
             val int1: Int
         ) : Products()
     }
@@ -69,14 +65,14 @@ internal class CalcTest {
 
     private fun sumsToExpr(ast: Sums): Expr =
         when (ast) {
-            is Sums.Sums1 -> Expr.Expr2(sumsToExpr(ast.sums1), "+", productsToExpr(ast.products1))
-            is Sums.Sums2 -> productsToExpr(ast.products1)
+            is Sums.Cons -> Expr.Expr2(sumsToExpr(ast.sums1), "+", productsToExpr(ast.products1))
+            is Sums.Term -> productsToExpr(ast.products1)
         }
 
     private fun productsToExpr(ast: Products): Expr =
         when (ast) {
-            is Products.Products1 -> Expr.Expr2(productsToExpr(ast.products1), "*", Expr.Expr1(ast.int1))
-            is Products.Products2 -> Expr.Expr1(ast.int1)
+            is Products.Cons -> Expr.Expr2(productsToExpr(ast.products1), "*", Expr.Expr1(ast.int1))
+            is Products.Term -> Expr.Expr1(ast.int1)
         }
 
     private fun reduce(expr: Expr): Int =
@@ -95,11 +91,11 @@ internal class CalcTest {
 
     private val rules: String =
         """
-    Goal -> Sums <eof>
-    Sums -> Sums + Products
-    Sums -> Products
-    Products -> Products * <int>
-    Products -> <int>
+    Goal.Goal1 -> Sums <eof>
+    Sums.Cons -> Sums + Products
+    Sums.Term -> Products
+    Products.Cons -> Products * <int>
+    Products.Term -> <int>
 """
 }
 

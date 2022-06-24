@@ -1,7 +1,6 @@
 package jitrs.magma
 
 import jitrs.datastructures.PersistentList
-import jitrs.links.CstGrammar
 import jitrs.links.Grammar
 import jitrs.links.parser.AutoCst
 import jitrs.links.parser.getContainingClassOrPackageName
@@ -11,33 +10,33 @@ fun cstToIr(cst: Expr): Expression = exprToIr(cst, PersistentList.Nil())
 
 fun exprToIr(expr: Expr, bindings: Bindings): Expression =
     when (expr) {
-        is Expr.Expr1 -> Expression.Application(exprToIr(expr.func, bindings), valueToIr(expr.arg, bindings))
-        is Expr.Expr2 -> valueToIr(expr.value, bindings)
+        is Expr.Application -> Expression.Application(exprToIr(expr.func, bindings), valueToIr(expr.arg, bindings))
+        is Expr.Val -> valueToIr(expr.value, bindings)
     }
 
 fun valueToIr(value: Value, bindings: Bindings): Expression =
     when (value) {
-        is Value.Value1 -> {
+        is Value.Lambda -> {
             val newBindings = PersistentList.Cons(value.name, bindings)
             Expression.Lambda(exprToIr(value.body, newBindings))
         }
-        is Value.Value2 -> {
+        is Value.LetIn -> {
             val newBindings = PersistentList.Cons(value.name, bindings)
             Expression.LetIn(
                 exprToIr(value.func, bindings),
                 exprToIr(value.body, newBindings)
             )
         }
-        is Value.Value3 -> {
+        is Value.IfThenElse -> {
             Expression.IfThenElse(
                 exprToIr(value.cond, bindings),
                 exprToIr(value.aye, bindings),
                 exprToIr(value.nay, bindings)
             )
         }
-        is Value.Value4 -> exprToIr(value.parenthesized, bindings)
-        is Value.Value5 -> Expression.IntConst(value.num)
-        is Value.Value6 -> {
+        is Value.Parens -> exprToIr(value.parenthesized, bindings)
+        is Value.Num -> Expression.IntConst(value.num)
+        is Value.Var -> {
             val variableNumber = bindings.asSequence().indexOf(value.name)
             // Compute de Bruijn index
             Expression.Var(variableNumber + 1)
@@ -53,47 +52,46 @@ sealed class Goal : AutoCst() {
 }
 
 sealed class Expr : AutoCst() {
-    data class Expr1(val func: Expr, val arg: Value) : Expr()
+    data class Application(val func: Expr, val arg: Value) : Expr()
 
-    data class Expr2(val value: Value) : Expr()
+    data class Val(val value: Value) : Expr()
 }
 
 sealed class Value : AutoCst() {
-    data class Value1(val name: String, val body: Expr) : Value()
+    data class Lambda(val name: String, val body: Expr) : Value()
 
-    data class Value2(val name: String, val func: Expr, val body: Expr) : Value()
+    data class LetIn(val name: String, val func: Expr, val body: Expr) : Value()
 
-    data class Value3(val cond: Expr, val aye: Expr, val nay: Expr) : Value()
+    data class IfThenElse(val cond: Expr, val aye: Expr, val nay: Expr) : Value()
 
-    data class Value4(val parenthesized: Expr) : Value()
+    data class Parens(val parenthesized: Expr) : Value()
 
-    data class Value5(val num: Int) : Value()
+    data class Num(val num: Int) : Value()
 
-    data class Value6(val name: String) : Value()
+    data class Var(val name: String) : Value()
 }
 
-fun grammar(): CstGrammar {
-    val grammar = Grammar.new(
+fun grammar(): Grammar {
+    val containerName = getContainingClassOrPackageName(Expr::class.java)
+
+    return Grammar.new(
         arrayOf("fun", "=>", "<ident>", "<int>", "(", ")", "let", "=", "in", "if", "then", "else", "<eof>"),
         arrayOf("Goal", "Expr", "Value"),
         rules(),
+        containerName,
         { Character.isJavaIdentifierStart(it) },
         { Character.isJavaIdentifierPart(it) }
     )
-
-    val containerName = getContainingClassOrPackageName(Expr::class.java)
-
-    return CstGrammar.new(grammar, containerName)
 }
 
 fun rules() = """
-            Goal -> Expr <eof>
-            Expr -> Expr Value
-            Expr -> Value
-            Value -> fun <ident> => Expr
-            Value -> let <ident> = Expr in Expr
-            Value -> if Expr then Expr else Expr
-            Value -> ( Expr )
-            Value -> <int>
-            Value -> <ident>
+            Goal.Goal1 -> Expr <eof>
+            Expr.Application -> Expr Value
+            Expr.Val -> Value
+            Value.Lambda -> fun <ident> => Expr
+            Value.LetIn -> let <ident> = Expr in Expr
+            Value.IfThenElse -> if Expr then Expr else Expr
+            Value.Parens -> ( Expr )
+            Value.Num -> <int>
+            Value.Var -> <ident>
             """

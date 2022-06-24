@@ -6,21 +6,23 @@ import jitrs.links.tokenizer.*
 /**
  * Parse a string into an array of parsing rules
  */
-fun metaParse(scheme: Scheme, string: String): Rules {
+fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair<Rules, RuleConstructorMap?> {
     // Build a language with terminals required for parsing rules
     // In this language what was nonterminals is treated as terminals
     val terminalNonTerminals = scheme.map.nonTerminals.asSequence()
     val language = scheme.map.terminals.asSequence()
         .withIndex()
         .map { (id, str) -> escapeSpecialTerminal(scheme.specialIdInfo, id, str) }
-        .plus(sequenceOf("->", "\n", "<eof>"))
+        .plus(sequenceOf(".", "->", "\n", "<ident>", "<eof>"))
         .plus(terminalNonTerminals)
         .toList().toTypedArray()
 
     Scheme.sortTerminals(language)
 
+    val dotId: TerminalId = language.indexOf(".")
     val arrowId: TerminalId = language.indexOf("->")
     val newLineId: TerminalId = language.indexOf("\n")
+    val metaIdentId: TerminalId = language.indexOf("<ident>")
     val metaEofId: TerminalId = language.indexOf("<eof>")
     // Not to be confused with escaped "$<eof>" already present in scheme
 
@@ -44,49 +46,74 @@ fun metaParse(scheme: Scheme, string: String): Rules {
         .filter { (id, _) -> id != newLineId && id != arrowId }
         .map { (_, symbol) -> symbol }.requireNoNulls()
 
-    val tokens = tokenize(language, SpecialIdInfo.from(language), string)
+    val tokens = tokenize(
+        language,
+        SpecialIdInfo.from(language),
+        string,
+        ::isConstructorStartAndPart,
+        ::isConstructorStartAndPart
+    )
 
     // State machine for parsing rules
-    val stateLhs = 0 // Reading lhs
-    val stateArrow = 1 // Reading arrow
-    val stateRhs = 2 // Reading rhs
-    var state = stateLhs
+    val stateLhsName = 0 // Reading lhs name
+    val stateLhsDot = 1 // Reading lhs dot
+    val stateLhsConstructor = 2 // Reading lhs constructor
+    val stateArrow = 3 // Reading arrow
+    val stateRhs = 4 // Reading rhs
+
+    var state = stateLhsName
 
     val rules = ArrayList<Rule>()
-    var lhs: NonTerminalId = -1
+    var lhsId: NonTerminalId = -1
+    // Key is RuleId
+    val ruleConstructorMap = ArrayList<String?>()
     val rhs = ArrayList<Symbol>()
-    for ((tokenId, _, span) in tokens) {
+    for ((tokenId, data, span) in tokens) {
         when (state) {
-            stateLhs -> {
+            stateLhsName -> {
                 if (tokenId == newLineId || tokenId == metaEofId) continue
                 when (val lhs0 = backMap[tokenId]) {
-                    is Symbol.NonTerminal -> lhs = lhs0.id
-                    is Symbol.Terminal -> throw SyntaxErrorException(
-                        "Expected rule lhs, found ${language[tokenId]}",
-                        string,
-                        span
-                    )
+                    is Symbol.NonTerminal -> lhsId = lhs0.id
+                    is Symbol.Terminal ->
+                        throw SyntaxErrorException("Expected rule lhs, found ${language[tokenId]}", string, span)
                 }
+                state = stateLhsDot
+            }
+            stateLhsDot -> {
+                state = when (tokenId) {
+                    // If token is arrow, skip to rhs
+                    arrowId -> {
+                        ruleConstructorMap.add(null)
+                        stateRhs
+                    }
+                    dotId -> stateLhsConstructor
+                    else -> throw SyntaxErrorException("Expected \".\", found ${language[tokenId]}", string, span)
+                }
+            }
+            stateLhsConstructor -> {
+                if (tokenId != metaIdentId)
+                    throw SyntaxErrorException("Expected <ident>, found ${language[tokenId]}", string, span)
+
+                val ruleId = rules.size
+
+                ruleConstructorMap.add(data as String)
+
                 state = stateArrow
             }
             stateArrow -> {
                 // Match arrow
-                when (tokenId) {
-                    arrowId -> {
-                    }
-                    metaEofId -> throw SyntaxErrorException("Expected arrow, found eof", string, span)
-                    else -> throw SyntaxErrorException("Expected arrow, found terminal", string, span)
-                }
+                if (tokenId != arrowId)
+                    throw SyntaxErrorException("Expected arrow, found ${language[tokenId]}", string, span)
                 state = stateRhs
             }
             stateRhs -> {
                 if (tokenId == newLineId || tokenId == metaEofId) {
                     // Rule end
-                    rules.add(Rule(lhs, rhs.toTypedArray()))
-                    lhs = -1
+                    rules.add(Rule(lhsId, rhs.toTypedArray()))
+                    lhsId = -1
                     rhs.clear()
 
-                    state = stateLhs
+                    state = stateLhsName
                     continue
                 }
                 rhs.add(backMap[tokenId]!!)
@@ -95,17 +122,20 @@ fun metaParse(scheme: Scheme, string: String): Rules {
         }
     }
 
-    return rules.toTypedArray()
+    return if (parseConstructorEh) {
+        val nullConstructors = ruleConstructorMap.asSequence()
+            .withIndex()
+            .filter { (_, x) -> x == null }
+            .map { (i, _) -> i }
+            .toList()
+        if (nullConstructors.isNotEmpty())
+            throw RuntimeException("Constructor names were requested but not provided for rules: $nullConstructors")
+        Pair(rules.toTypedArray(), ruleConstructorMap.requireNoNulls().toTypedArray())
+    } else
+        Pair(rules.toTypedArray(), null)
 }
 
-fun skipSpace(string: String, i: Int): Int {
-    var i2 = i
-    while (i2 < string.length && string[i2] == ' ') i2++
-    return i2
-}
+fun isConstructorStartAndPart(c: Char): Boolean = c.isLetter() || c.isDigit()
 
-fun skipWhiteSpace(string: String, i: Int): Int {
-    var i2 = i
-    while (i2 < string.length && (string[i2] == ' ' || string[i2] == '\n')) i2++
-    return i2
-}
+// Key is RuleId
+typealias RuleConstructorMap = Array<String>

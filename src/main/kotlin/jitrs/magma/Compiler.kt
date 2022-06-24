@@ -1,16 +1,16 @@
 package jitrs.magma
 
-import jitrs.links.CstGrammar
+import jitrs.links.Grammar
 import jitrs.magma.infer.Expression
 import jitrs.magma.infer.Inference
 import jitrs.magma.infer.PolyType
 
 class Compiler private constructor(
-    private val grammar: CstGrammar,
+    private val grammar: Grammar,
     private val inference: Inference
 ) {
     fun getIr(string: String): Expression {
-        val cst = this.grammar.parse(string)
+        val cst = this.grammar.parseOneCst(string)
         return cstToIr(cst as Expr)
     }
 

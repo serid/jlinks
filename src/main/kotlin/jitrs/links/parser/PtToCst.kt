@@ -1,6 +1,7 @@
 package jitrs.links.parser
 
 import jitrs.links.Pt
+import jitrs.links.RuleConstructorMap
 import jitrs.links.tablegen.Rules
 import jitrs.links.tablegen.Symbol
 import jitrs.links.tokenizer.Scheme
@@ -35,6 +36,7 @@ class PtToCst private constructor(
         fun new(
             scheme: Scheme,
             rules: Rules,
+            ruleConstructorMap: RuleConstructorMap,
             containerName: String,
         ): PtToCst {
             // Find class for each NonTerminalId
@@ -44,13 +46,11 @@ class PtToCst private constructor(
             }
             val nonTerminalClasses = nonTerminalClasses0.requireNoNulls()
 
-            // For each nonterminal, keep count of how many times it was encountered as lhs in rule list
-            val counters = Array(scheme.map.nonTerminals.size) { 1 }
             val reductionInfo = Array<ReductionInfo?>(rules.size) { null }
             for ((ruleId, rule) in rules.withIndex()) {
                 // Find class for lhs
                 val name = scheme.map.nonTerminals[rule.lhs]
-                val variantName = name + counters[rule.lhs]
+                val variantName = ruleConstructorMap[ruleId]
                 val clazz = Class.forName("$containerName$name$$variantName")
 
                 // Find fields
@@ -72,7 +72,6 @@ class PtToCst private constructor(
                 }
 
                 reductionInfo[ruleId] = clazz.getConstructor(*fields.toTypedArray())
-                counters[rule.lhs]++
             }
 
             val reflectionInfo = reductionInfo.requireNoNulls()
