@@ -1,7 +1,10 @@
 package jitrs.magma
 
 import jitrs.datastructures.PersistentList
+import jitrs.links.CstGrammar
+import jitrs.links.Grammar
 import jitrs.links.parser.AutoCst
+import jitrs.links.parser.getContainingClassOrPackageName
 import jitrs.magma.infer.Expression
 
 fun cstToIr(cst: Expr): Expression = exprToIr(cst, PersistentList.Nil())
@@ -35,7 +38,6 @@ fun valueToIr(value: Value, bindings: Bindings): Expression =
         is Value.Value4 -> exprToIr(value.parenthesized, bindings)
         is Value.Value5 -> Expression.IntConst(value.num)
         is Value.Value6 -> {
-//            val size = bindings.size()
             val variableNumber = bindings.asSequence().indexOf(value.name)
             // Compute de Bruijn index
             Expression.Var(variableNumber + 1)
@@ -68,6 +70,20 @@ sealed class Value : AutoCst() {
     data class Value5(val num: Int) : Value()
 
     data class Value6(val name: String) : Value()
+}
+
+fun grammar(): CstGrammar {
+    val grammar = Grammar.new(
+        arrayOf("fun", "=>", "<ident>", "<int>", "(", ")", "let", "=", "in", "if", "then", "else", "<eof>"),
+        arrayOf("Goal", "Expr", "Value"),
+        rules(),
+        { Character.isJavaIdentifierStart(it) },
+        { Character.isJavaIdentifierPart(it) }
+    )
+
+    val containerName = getContainingClassOrPackageName(Expr::class.java)
+
+    return CstGrammar.new(grammar, containerName)
 }
 
 fun rules() = """
