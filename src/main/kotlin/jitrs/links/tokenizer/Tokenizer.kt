@@ -4,7 +4,7 @@ import jitrs.links.tablegen.TerminalId
 import jitrs.util.matchPrefix
 
 // Terminals "<int>", "<ident>", "<string>", "<eof>" and "<nl>" have special meaning for the tokenizer.
-// Use escape prefix $ to treat them as normal lexemes.
+// Use escape prefix $ to treat them as normal keywords.
 fun tokenize(
     terminals: Array<String>,
     specialIdInfo: SpecialIdInfo,
@@ -12,8 +12,8 @@ fun tokenize(
     identStartPredicate: (Char) -> Boolean = { false },
     identPartPredicate: (Char) -> Boolean = { false }
 ): Array<Token> {
-    // Split terminals into "lexemes" and "special"
-    val lexemeTerminals = terminals.asSequence()
+    // Split terminals into "keywords" and "special"
+    val keywordTerminals = terminals.asSequence()
         .withIndex()
         .filter { (id, _) -> !specialIdInfo.isSpecialTerminal(id) }
         .map { (id, str) -> Pair(id, unEscapeTerminal(str)) }
@@ -29,10 +29,17 @@ fun tokenize(
             continue@outer
         }
 
-        // Try lexemes
-        for ((id, lexeme) in lexemeTerminals) if (matchPrefix(string, i, lexeme)) {
-            result.add(Token(id, Unit, Span(i, i + lexeme.length)))
-            i += lexeme.length
+        // TODO: use FSM instead of trying each keyword
+        // Try keywords
+        for ((id, keyword) in keywordTerminals) {
+            if (!matchPrefix(string, i, keyword)) continue
+            if (i + keyword.length < string.length &&
+                sameCharClass(keyword.last(), string[i + keyword.length])
+            ) continue
+            // If last keyword character and the next character have same class, it's not a full keyword but a prefix
+
+            result.add(Token(id, Unit, Span(i, i + keyword.length)))
+            i += keyword.length
             continue@outer
         }
 
@@ -92,6 +99,33 @@ fun tokenize(
     identStartPredicate: (Char) -> Boolean = { false },
     identPartPredicate: (Char) -> Boolean = { false }
 ): Array<Token> = tokenize(scheme.map.terminals, scheme.specialIdInfo, string, identStartPredicate, identPartPredicate)
+
+//fun lexicalAnalysis(string: String): Iterator<Lexeme> = iterator {
+//    var i = 0
+//    val sb = StringBuilder()
+//    while (i < string.length) {
+//        do {
+//            val c = string[i]
+//            if (!c.isWhitespace())
+//                sb.append(c)
+//            i++
+//        } while (i < string.length && sameCharClass(c, string[i]))
+//
+//        yield(sb.toString())
+//        sb.clear()
+//    }
+//}
+//
+//typealias Lexeme = String
+
+private fun sameCharClass(c1: Char, c2: Char): Boolean = c1.classify() == c2.classify()
+
+private fun Char.classify(): Int = when {
+    this.isLetterOrDigit() -> 1
+    this == '\n' -> 2
+    this.isWhitespace() -> 3
+    else -> 4
+}
 
 fun escapeSpecialTerminal(
     specialIdInfo: SpecialIdInfo,
