@@ -13,6 +13,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.ow2.asm:asm:9.3")
     implementation("org.junit.jupiter:junit-jupiter:5.7.0")
     testImplementation(kotlin("test"))
 }
