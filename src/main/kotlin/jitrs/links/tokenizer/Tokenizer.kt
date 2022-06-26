@@ -3,21 +3,17 @@ package jitrs.links.tokenizer
 import jitrs.links.tablegen.TerminalId
 import jitrs.util.matchPrefix
 
-// Terminals "<int>", "<ident>", "<string>", "<eof>" and "<nl>" have special meaning for the tokenizer.
-// Use escape prefix $ to treat them as normal keywords.
 fun tokenize(
     terminals: Array<String>,
     specialIdInfo: SpecialIdInfo,
     string: String,
     identStartPredicate: (Char) -> Boolean = { false },
-    identPartPredicate: (Char) -> Boolean = { false }
+    identPartPredicate: (Char) -> Boolean = identStartPredicate
 ): Array<Token> {
     // Split terminals into "keywords" and "special"
     val keywordTerminals = terminals.asSequence()
         .withIndex()
         .filter { (id, _) -> !specialIdInfo.isSpecialTerminal(id) }
-        .map { (id, str) -> Pair(id, unEscapeTerminal(str)) }
-        .toList().toTypedArray()
 
 
     val result = arrayListOf<Token>()

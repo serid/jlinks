@@ -18,6 +18,10 @@ class Scheme private constructor(
         h
     }
 
+    fun getTerminal(string: String) = (this.reverse[string] as Symbol.Terminal).id
+
+    fun getNonTerminal(string: String) = (this.reverse[string] as Symbol.NonTerminal).id
+
     companion object {
         fun new(
             map: SymbolArray<String>

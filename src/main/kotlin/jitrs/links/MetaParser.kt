@@ -1,21 +1,17 @@
 package jitrs.links
 
 import jitrs.links.tablegen.*
-import jitrs.links.tokenizer.*
+import jitrs.links.tokenizer.Scheme
+import jitrs.links.tokenizer.SpecialIdInfo
+import jitrs.links.tokenizer.SyntaxErrorException
+import jitrs.links.tokenizer.tokenize
 
 /**
  * Parse a string into an array of parsing rules
  */
 fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair<Rules, RuleConstructorMap?> {
-    // Build a language with terminals required for parsing rules
-    // In this language what was nonterminals is treated as terminals
-    val terminalNonTerminals = scheme.map.nonTerminals.asSequence()
-    val language = scheme.map.terminals.asSequence()
-        .withIndex()
-        .map { (id, str) -> escapeSpecialTerminal(scheme.specialIdInfo, id, str) }
-        .plus(sequenceOf(".", "->", "\n", "<ident>", "<eof>"))
-        .plus(terminalNonTerminals)
-        .toList().toTypedArray()
+    // <string> is used for escaped tokens like . and ->
+    val language = arrayOf(".", "->", "\n", "<ident>", "<string>", "<eof>")
 
     Scheme.sortTerminals(language)
 
@@ -23,35 +19,14 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
     val arrowId: TerminalId = language.indexOf("->")
     val newLineId: TerminalId = language.indexOf("\n")
     val metaIdentId: TerminalId = language.indexOf("<ident>")
+    val metaStringId: TerminalId = language.indexOf("<string>")
     val metaEofId: TerminalId = language.indexOf("<eof>")
-    // Not to be confused with escaped "$<eof>" already present in scheme
-
-    // Maps terminals in new language into symbols of original scheme
-    val backMap = Array<Symbol?>(language.size) { null }
-    for ((id, lex) in language.withIndex()) {
-        val unescaped = unEscapeTerminal(lex)
-
-        fun f(array: Array<String>, f: (Int) -> Symbol) {
-            val schemeId = array.indexOf(unescaped)
-            if (schemeId != -1)
-                backMap[id] = f(schemeId)
-        }
-
-        f(scheme.map.terminals, Symbol::Terminal)
-        f(scheme.map.nonTerminals, Symbol::NonTerminal)
-    }
-
-    // Assert that every terminal except "\n" and "->" maps to a symbol in original scheme
-    backMap.asSequence().withIndex()
-        .filter { (id, _) -> id != newLineId && id != arrowId }
-        .map { (_, symbol) -> symbol }.requireNoNulls()
 
     val tokens = tokenize(
         language,
         SpecialIdInfo.from(language),
         string,
-        ::isConstructorStartAndPart,
-        ::isConstructorStartAndPart
+        { it != '.' && !it.isWhitespace() }
     )
 
     // State machine for parsing rules
@@ -68,57 +43,56 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
     // Key is RuleId
     val ruleConstructorMap = ArrayList<String?>()
     val rhs = ArrayList<Symbol>()
-    for ((tokenId, data, span) in tokens) {
-        when (state) {
-            stateLhsName -> {
-                if (tokenId == newLineId || tokenId == metaEofId) continue
-                when (val lhs0 = backMap[tokenId]) {
-                    is Symbol.NonTerminal -> lhsId = lhs0.id
-                    is Symbol.Terminal ->
-                        throw SyntaxErrorException("Expected rule lhs, found ${language[tokenId]}", string, span)
-                }
-                state = stateLhsDot
-            }
-            stateLhsDot -> {
-                state = when (tokenId) {
-                    // If token is arrow, skip to rhs
-                    arrowId -> {
-                        ruleConstructorMap.add(null)
-                        stateRhs
-                    }
-                    dotId -> stateLhsConstructor
-                    else -> throw SyntaxErrorException("Expected \".\", found ${language[tokenId]}", string, span)
-                }
-            }
-            stateLhsConstructor -> {
-                if (tokenId != metaIdentId)
-                    throw SyntaxErrorException("Expected <ident>, found ${language[tokenId]}", string, span)
+    @Suppress("LiftReturnOrAssignment")
+    for ((tokenId, data, span) in tokens) when (state) {
+        stateLhsName -> {
+            if (tokenId == newLineId || tokenId == metaEofId) continue
+            if (tokenId != metaIdentId)
+                throw SyntaxErrorException("Expected rule lhs, found ${language[tokenId]}", string, span)
 
-                val ruleId = rules.size
-
-                ruleConstructorMap.add(data as String)
-
-                state = stateArrow
-            }
-            stateArrow -> {
-                // Match arrow
-                if (tokenId != arrowId)
-                    throw SyntaxErrorException("Expected arrow, found ${language[tokenId]}", string, span)
+            // TODO: maybe hashmap would be faster than indexOf
+            lhsId = scheme.map.nonTerminals.indexOf(data)
+            state = stateLhsDot
+        }
+        stateLhsDot -> when (tokenId) {
+            // If token is arrow, skip to rhs
+            arrowId -> {
+                ruleConstructorMap.add(null)
                 state = stateRhs
             }
-            stateRhs -> {
-                if (tokenId == newLineId || tokenId == metaEofId) {
-                    // Rule end
-                    rules.add(Rule(lhsId, rhs.toTypedArray()))
-                    lhsId = -1
-                    rhs.clear()
+            dotId -> state = stateLhsConstructor
+            else -> throw SyntaxErrorException("Expected \".\", found ${language[tokenId]}", string, span)
+        }
+        stateLhsConstructor -> {
+            if (tokenId != metaIdentId)
+                throw SyntaxErrorException("Expected <ident>, found ${language[tokenId]}", string, span)
 
-                    state = stateLhsName
-                    continue
-                }
-                rhs.add(backMap[tokenId]!!)
-                // State unchanged
+            ruleConstructorMap.add(data as String)
+
+            state = stateArrow
+        }
+        stateArrow -> {
+            // Match arrow
+            if (tokenId != arrowId)
+                throw SyntaxErrorException("Expected arrow, found ${language[tokenId]}", string, span)
+            state = stateRhs
+        }
+        stateRhs -> {
+            if (tokenId == newLineId || tokenId == metaEofId) {
+                // Rule end
+                rules.add(Rule(lhsId, rhs.toTypedArray()))
+                lhsId = -1
+                rhs.clear()
+
+                state = stateLhsName
+                continue
             }
+            if (!(tokenId == metaIdentId || tokenId == metaStringId))
+                throw SyntaxErrorException("Expected <ident> or <string>, found ${language[tokenId]}", string, span)
+
+            // State unchanged
+            val symbol = scheme.reverse[data] ?: throw SyntaxErrorException("Unrecognized token", string, span)
+            rhs.add(symbol)
         }
     }
 
