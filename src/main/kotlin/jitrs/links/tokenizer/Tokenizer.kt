@@ -28,11 +28,11 @@ fun tokenize(
         // TODO: use FSM instead of trying each keyword
         // Try keywords
         for ((id, keyword) in keywordTerminals) {
-            if (!matchPrefix(string, i, keyword)) continue
+            // If last keyword character and the next character have same class, it's not a full keyword but a prefix
             if (i + keyword.length < string.length &&
                 sameCharClass(keyword.last(), string[i + keyword.length])
             ) continue
-            // If last keyword character and the next character have same class, it's not a full keyword but a prefix
+            if (!matchPrefix(string, i, keyword)) continue
 
             result.add(Token(id, Unit, Span(i, i + keyword.length)))
             i += keyword.length
@@ -49,11 +49,11 @@ fun tokenize(
                 val start = i
 
                 var n = 0
-                while (i < string.length && Character.isDigit(string[i])) {
+                do {
                     n *= 10
                     n += string[i].digitToInt()
                     i++
-                }
+                } while (i < string.length && Character.isDigit(string[i]))
                 result.add(Token(specialIdInfo.intSpecialId, n, Span(start, i)))
             }
             specialIdInfo.identSpecialId != -1 && identStartPredicate(string[i]) -> {
@@ -96,23 +96,28 @@ fun tokenize(
     identPartPredicate: (Char) -> Boolean = { false }
 ): Array<Token> = tokenize(scheme.map.terminals, scheme.specialIdInfo, string, identStartPredicate, identPartPredicate)
 
-//fun lexicalAnalysis(string: String): Iterator<Lexeme> = iterator {
+//fun lexicalAnalysis(string: String): Iterator<Span> = iterator {
 //    var i = 0
-//    val sb = StringBuilder()
-//    while (i < string.length) {
-//        do {
-//            val c = string[i]
-//            if (!c.isWhitespace())
-//                sb.append(c)
+//    outer@
+//    while (true) {
+//        // skip space
+//        while (true) {
+//            if (i >= string.length) break@outer
+//            if (string[i] != ' ') break
 //            i++
-//        } while (i < string.length && sameCharClass(c, string[i]))
+//        }
 //
-//        yield(sb.toString())
-//        sb.clear()
+//        // Count until lexeme end
+//        var j = i + 1
+//        while (true) {
+//            if (j >= string.length) break
+//            if (!sameCharClass(string[j - 1], string[j])) break
+//            j++
+//        }
+//
+//        yield(Span(i, j))
 //    }
 //}
-//
-//typealias Lexeme = String
 
 private fun sameCharClass(c1: Char, c2: Char): Boolean = c1.classify() == c2.classify()
 
@@ -122,6 +127,9 @@ private fun Char.classify(): Int = when {
     this.isWhitespace() -> 3
     else -> 4
 }
+
+fun String.regionFullyMatches(from: Int, to: Int, other: String): Boolean =
+    (to - from == other.length) && this.regionMatches(from, other, 0, other.length)
 
 fun escapeSpecialTerminal(
     specialIdInfo: SpecialIdInfo,
