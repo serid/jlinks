@@ -12,7 +12,8 @@ import jitrs.util.toAlphabetChar
 import kotlin.random.Random
 
 class Inference private constructor(
-    private val randomNumberProvider: Iterator<Boolean>
+    private val randomNumberProvider: Iterator<Boolean>,
+    private var nextTypeVarIndex: Int,
 ) {
     fun infer(expr: Expression): PolyType {
         val res = infer0(expr, PersistentList.Nil.getNil())
@@ -55,7 +56,7 @@ class Inference private constructor(
                 bodyType
             }
             is Expression.IfThenElse -> {
-                unify(Types.intType, infer0(expr.cond, bindings))
+                unify(Types.condType, infer0(expr.cond, bindings))
 
                 val bodyType = newUnificationVariable()
                 unify(bodyType, infer0(expr.aye, bindings))
@@ -67,8 +68,10 @@ class Inference private constructor(
             }
         }
 
-    private fun newUnificationVariable(): MonoTypeUnificationVar =
-        DisjointSetObject.new(MonoType.Var(notUnifiedYetIndex))
+    // Type variables allocated by this function have indices from -1 to -infinity
+    private fun newUnificationVariable(): MonoTypeUnificationVar {
+        return DisjointSetObject.new(MonoType.Var(nextTypeVarIndex--))
+    }
 
     private fun unify(t0: MonoTypeUnificationVar, t1: MonoTypeUnificationVar) {
         val ta = t0.findData()
@@ -123,7 +126,7 @@ class Inference private constructor(
             when (val t0 = t.findData()) {
                 is MonoType.Var -> {
                     // Index of bound variables is never higher than forall count
-                    val isVariableBound = t0.index <= forallCount && t0.index != notUnifiedYetIndex
+                    val isVariableBound = t0.index <= forallCount && !isVariableNotUnifiedYet(t0.index)
                     if (isVariableBound) consistentReplacements[t0.index]
                     else t
                 }
@@ -136,22 +139,25 @@ class Inference private constructor(
     // Г
     private fun ghe(t: MonoTypeUnificationVar, bindings: Bindings): PolyType {
         var counter = 0
-        val map = hashMapOf<IdentityWrapper<MonoType.Var>, TypeIndex>()
+
+        // Map ununified variables to freshly chosen variable indices
+        val map = hashMapOf<TypeIndex, TypeIndex>()
 
         // Copy the type while binding unresolved unification variables to quantified variables
         fun visit(t1: MonoTypeUnificationVar): MonoTypeUnificationVar {
             return when (val data = t1.findData()) {
                 is MonoType.Var -> {
                     // Skip variables bound in "bindings"
-                    val isBound = bindings.asSequence().any { it.mono.findData() === data }
+                    val isBound = bindings.asSequence().any {
+                        (it.mono.findData() as MonoType.Var) == data
+                    }
                     if (isBound)
                         return t1
 
-                    val wrapper = IdentityWrapper(data)
-                    var r = map[wrapper]
+                    var r = map[data.index]
                     if (r == null) {
                         r = counter++
-                        map[wrapper] = r
+                        map[data.index] = r
                     }
                     DisjointSetObject.new(MonoType.Var(r))
                 }
@@ -177,9 +183,11 @@ class Inference private constructor(
         }
 
         fun newWithRandomNumberProvider(randomNumberProvider: Iterator<Boolean>): Inference =
-            Inference(randomNumberProvider)
+            Inference(randomNumberProvider, -1)
     }
 }
+
+private fun isVariableNotUnifiedYet(id: TypeIndex): Boolean = id < 0
 
 // No need to store variable key since variables are accessed using de Bruijn indices
 typealias Bindings = PersistentList<PolyType>
@@ -229,7 +237,7 @@ sealed class Expression {
 sealed class MonoType {
     data class Var(val index: TypeIndex) : MonoType() {
         override fun toString(): String =
-            if (index == notUnifiedYetIndex) "-1"
+            if (isVariableNotUnifiedYet(index)) "-1"
             else index.toAlphabetChar().toString()
 // Wrap an object in IdentityWrapper to get this behavior:
 
@@ -308,5 +316,3 @@ data class PolyType(val forallCount: Int, val mono: MonoTypeUnificationVar) {
 // Variable index
 typealias Index = Int
 typealias TypeIndex = Int
-
-const val notUnifiedYetIndex: TypeIndex = -1
