@@ -19,11 +19,20 @@ fun tokenize(
     val result = arrayListOf<Token>()
     var i = 0
     outer@
-    while (i < string.length) {
-        if (string[i] == ' ') {
+    while (true) {
+        // Skip space
+        while (i < string.length && string[i] == ' ')
             i++
-            continue@outer
+
+        // Skip comments
+        if (i < string.length && matchPrefix(string, i, "--")) {
+            i += 2
+            while (i < string.length && string[i] != '\n')
+                i++
         }
+
+        if (i >= string.length)
+            break
 
         // TODO: use FSM instead of trying each keyword
         // Try keywords

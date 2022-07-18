@@ -85,7 +85,9 @@ fun grammar(): Grammar {
 }
 
 fun rules() = """
+            -- Goal is ignored
             Goal.Goal1 -> Expr <eof>
+            
             Expr.Application -> Expr Val
             Expr.Just -> Val
             Val.Lambda -> fun <ident> => Expr
