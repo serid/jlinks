@@ -1,7 +1,7 @@
-package jitrs.magma.infer
+package jitrs.algorithmj.infer
 
+import jitrs.algorithmj.Compiler
 import jitrs.datastructures.DisjointSetObject
-import jitrs.magma.Compiler
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance

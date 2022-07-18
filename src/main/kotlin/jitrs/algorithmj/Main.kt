@@ -1,4 +1,4 @@
-package jitrs.magma
+package jitrs.algorithmj
 
 fun main() {
     val compiler = Compiler.new()

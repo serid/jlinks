@@ -1,10 +1,10 @@
-package jitrs.magma.syntax
+package jitrs.algorithmj.syntax
 
+import jitrs.algorithmj.infer.Expression
 import jitrs.datastructures.PersistentList
 import jitrs.links.Grammar
 import jitrs.links.parser.AutoCst
 import jitrs.links.parser.getContainingClassOrPackageName
-import jitrs.magma.infer.Expression
 
 fun cstToIr(cst: Expr): Expression = exprToIr(cst, PersistentList.Nil())
 
@@ -52,9 +52,9 @@ sealed class Goal : AutoCst() {
 }
 
 sealed class Expr : AutoCst() {
-    data class Application(val func: Expr, val arg: jitrs.magma.syntax.Val) : Expr()
+    data class Application(val func: Expr, val arg: Val) : Expr()
 
-    data class Just(val value: jitrs.magma.syntax.Val) : Expr()
+    data class Just(val value: Val) : Expr()
 }
 
 sealed class Val : AutoCst() {

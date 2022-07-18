@@ -1,4 +1,4 @@
-package jitrs.magma.infer
+package jitrs.algorithmj.infer
 
 open class TypeInferenceException : Exception()
 

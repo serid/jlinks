@@ -1,12 +1,12 @@
-package jitrs.magma
+package jitrs.algorithmj
 
+import jitrs.algorithmj.infer.Expression
+import jitrs.algorithmj.infer.Inference
+import jitrs.algorithmj.infer.PolyType
+import jitrs.algorithmj.syntax.Expr
+import jitrs.algorithmj.syntax.cstToIr
+import jitrs.algorithmj.syntax.grammar
 import jitrs.links.Grammar
-import jitrs.magma.infer.Expression
-import jitrs.magma.infer.Inference
-import jitrs.magma.infer.PolyType
-import jitrs.magma.syntax.Expr
-import jitrs.magma.syntax.cstToIr
-import jitrs.magma.syntax.grammar
 
 class Compiler private constructor(
     private val grammar: Grammar,

@@ -3,10 +3,9 @@
  * https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system#Algorithm_J
  */
 
-package jitrs.magma.infer
+package jitrs.algorithmj.infer
 
 import jitrs.datastructures.*
-import jitrs.util.IdentityWrapper
 import jitrs.util.ensureEqual
 import jitrs.util.toAlphabetChar
 import kotlin.random.Random
