@@ -6,14 +6,5 @@ package jitrs.util
 class IdentityWrapper<T>(
     val data: T
 ) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as IdentityWrapper<*>
-
-        return data === other.data
-    }
-
-    override fun hashCode(): Int = System.identityHashCode(data)
+    // Uses default implementation of [equals] and [hashCode]
 }

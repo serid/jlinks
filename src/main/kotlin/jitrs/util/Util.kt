@@ -38,3 +38,16 @@ fun printGCStats() {
     println("Total Garbage Collections: $totalGarbageCollections")
     println("Total Garbage Collection Time (ms): $garbageCollectionTime")
 }
+
+fun exceptionPrintMessageAndTrace(e: Exception) {
+    System.err.println(e.message)
+    e.printStackTrace()
+}
+
+inline fun <T, U> nullableMap(a: T?, f: (T) -> U): U? =
+    if (a == null)
+        a
+    else
+        f(a)
+
+inline fun <reified T> Any.cast() = this as T

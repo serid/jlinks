@@ -11,6 +11,35 @@ sealed class PersistentList<T> {
         }
     }
 
+    fun append(other: PersistentList<T>): PersistentList<T> = when (this) {
+        is Cons -> Cons(this.data, this.tail.append(other))
+        is Nil -> other
+    }
+
+    fun reverse(): PersistentList<T> {
+        var out = Nil.getNil<T>() as PersistentList<T>
+        var x = this
+        while (true)
+            when(x) {
+                is Cons -> {
+                    out = Cons(x.data, out)
+                    x = x.tail
+                }
+                is Nil -> break
+            }
+
+        return out
+    }
+
+    companion object {
+        fun <T> fromSequence(sequence: Sequence<T>): PersistentList<T> {
+            val nil = Nil.getNil<T>() as PersistentList<T>
+            return sequence
+                .fold(nil) { acc, t -> Cons(t, acc) }
+                .reverse()
+        }
+    }
+
     operator fun iterator(): Iterator<T> = PersistentListIterator(this)
 
     fun asSequence(): Sequence<T> = iterator().asSequence()
