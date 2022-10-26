@@ -12,3 +12,10 @@ one of them succeds.
 * LR(0) parser generator
 * SLR(1) lookahead generator
 * Generalized parsing
+
+# Examples
+
+For examples see the [tests directory](https://github.com/serid/jlinks/tree/master/src/test/kotlin/jitrs/links).
+
+Also check out [this example](https://github.com/serid/jlinks/tree/master/src/main/kotlin/jitrs/algorithmj),
+a type inference algorithm using JLinks to parse input expressions. 
