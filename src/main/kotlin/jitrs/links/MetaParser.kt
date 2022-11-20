@@ -91,7 +91,8 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
                 throw SyntaxErrorException("Expected <ident> or <string>, found ${language[tokenId]}", string, span)
 
             // State unchanged
-            val symbol = scheme.reverse[data] ?: throw SyntaxErrorException("Unrecognized token", string, span)
+            val symbol = scheme.reverse[data] ?:
+                throw SyntaxErrorException("\"$data\" terminal or nonterminal is not in list", string, span)
             rhs.add(symbol)
         }
     }
