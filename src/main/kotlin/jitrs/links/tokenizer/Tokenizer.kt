@@ -37,10 +37,6 @@ fun tokenize(
         // TODO: use FSM instead of trying each keyword
         // Try keywords
         for ((id, keyword) in keywordTerminals) {
-            // If last keyword character and the next character have same class, it's not a full keyword but a prefix
-            if (i + keyword.length < string.length &&
-                sameCharClass(keyword.last(), string[i + keyword.length])
-            ) continue
             if (!matchPrefix(string, i, keyword)) continue
 
             result.add(Token(id, Unit, Span(i, i + keyword.length)))
@@ -128,14 +124,14 @@ fun tokenize(
 //    }
 //}
 
-private fun sameCharClass(c1: Char, c2: Char): Boolean = c1.classify() == c2.classify()
-
-private fun Char.classify(): Int = when {
-    this.isLetterOrDigit() -> 1
-    this == '\n' -> 2
-    this.isWhitespace() -> 3
-    else -> 4
-}
+//private fun sameCharClass(c1: Char, c2: Char): Boolean = c1.classify() == c2.classify()
+//
+//private fun Char.classify(): Int = when {
+//    this.isLetterOrDigit() -> 1
+//    this == '\n' -> 2
+//    this.isWhitespace() -> 3
+//    else -> 4
+//}
 
 fun String.regionFullyMatches(from: Int, to: Int, other: String): Boolean =
     (to - from == other.length) && this.regionMatches(from, other, 0, other.length)
