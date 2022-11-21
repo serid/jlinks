@@ -1,10 +1,7 @@
 package jitrs.links
 
 import jitrs.links.tablegen.*
-import jitrs.links.tokenizer.Scheme
-import jitrs.links.tokenizer.SpecialIdInfo
-import jitrs.links.tokenizer.SyntaxErrorException
-import jitrs.links.tokenizer.tokenize
+import jitrs.links.tokenizer.*
 
 /**
  * Parse a string into an array of parsing rules
@@ -22,12 +19,14 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
     val metaStringId: TerminalId = language.indexOf("<string>")
     val metaEofId: TerminalId = language.indexOf("<eof>")
 
-    val tokens = tokenize(
+    val tokens0 = tokenize(
         language,
         SpecialIdInfo.from(language),
         string,
         { it != '.' && !it.isWhitespace() }
     )
+    // Unquote arrows
+    val tokens = tokens0.map { if (it.data == "\"->\"") it.modifyData("->") else it }
 
     // State machine for parsing rules
     val stateLhsName = 0 // Reading lhs name
@@ -52,6 +51,9 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
 
             // TODO: maybe hashmap would be faster than indexOf
             lhsId = scheme.map.nonTerminals.indexOf(data)
+            if (lhsId == -1)
+                throw SyntaxErrorException("$data nonterminal is not in list", string, span)
+
             state = stateLhsDot
         }
         stateLhsDot -> when (tokenId) {
