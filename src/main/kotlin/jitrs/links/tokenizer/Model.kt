@@ -7,9 +7,9 @@ import jitrs.util.UnreachableError
 import jitrs.util.myAssert
 
 // maps token ids to readable names
-class Scheme private constructor(
+class Scheme constructor(
     val map: SymbolArray<String>,
-    val specialIdInfo: SpecialIdInfo,
+    val specialIdInfo: SpecialIdInfo = SpecialIdInfo.from(map.terminals),
 ) {
     val reverse: HashMap<String, Symbol> by lazy {
         val h = hashMapOf<String, Symbol>()
@@ -21,24 +21,6 @@ class Scheme private constructor(
     fun getTerminal(string: String) = (this.reverse[string] as Symbol.Terminal).id
 
     fun getNonTerminal(string: String) = (this.reverse[string] as Symbol.NonTerminal).id
-
-    companion object {
-        fun new(
-            map: SymbolArray<String>
-        ): Scheme {
-            // Sort terminals
-            sortTerminals(map.terminals)
-
-            return Scheme(
-                map,
-                SpecialIdInfo.from(map.terminals)
-            )
-        }
-
-        // Sort terminals in order of decreasing length
-        // Without sorting, tokenization of "integer" in language ("int", "integer") yields Token(INT) and tail "eger"
-        fun sortTerminals(terminals: Array<String>): Unit = terminals.sortWith { x, y -> y.length - x.length }
-    }
 }
 
 data class SpecialIdInfo(
@@ -93,6 +75,8 @@ data class Token(
     init {
         myAssert(data is Int || data is String || data is Unit)
     }
+
+    fun modifyData(data: Any): Token = Token(this.id, data, this.span)
 
     fun toString(scheme: Scheme): String {
         val s = scheme.map.terminals[this.id]

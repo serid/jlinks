@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 internal class TokenizerTest {
     @Test
     fun tokenizerTest() {
-        val scheme = Scheme.new(
+        val scheme = Scheme(
             SymbolArray(
                 arrayOf("<int>", "<ident>", "<string>", "<eof>"),
                 arrayOf()

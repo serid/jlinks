@@ -11,6 +11,9 @@ fun tokenize(
     identPartPredicate: (Char) -> Boolean = identStartPredicate,
     treatNewLineAsSpace: Boolean = true,
 ): Array<Token> {
+    fun isWhitespace(c: Char): Boolean =
+        c == ' ' || treatNewLineAsSpace && specialIdInfo.newlineSpecialId == -1 && c == '\n'
+
     // Split terminals into "keywords" and "special"
     val keywordTerminals = terminals.asSequence()
         .withIndex()
@@ -22,7 +25,7 @@ fun tokenize(
     outer@
     while (true) {
         // Skip space
-        while (i < string.length && string[i] == ' ')
+        while (i < string.length && isWhitespace(string[i]))
             i++
 
         // Skip comments
@@ -35,65 +38,72 @@ fun tokenize(
         if (i >= string.length)
             break
 
-        // TODO: use FSM instead of trying each keyword
-        // Try keywords
-        for ((id, keyword) in keywordTerminals) {
-            if (!matchPrefix(string, i, keyword)) continue
+        // Find the longest matching token among keywords and specials
+        // Sequence of tokens and their lengths, which is then searched for a maximum value
+        val possibleTokens = sequence<Pair<Token, Int>> {
+            // TODO: use FSM instead of trying each keyword
+            // Try keywords
+            for ((id, keyword) in keywordTerminals) {
+                if (!matchPrefix(string, i, keyword)) continue
 
-            result.add(Token(id, Unit, Span(i, i + keyword.length)))
-            i += keyword.length
-            continue@outer
-        }
-
-        // Try specials
-        when {
-            treatNewLineAsSpace && string[i] == '\n' -> {
-                if (specialIdInfo.newlineSpecialId != -1)
-                    result.add(Token(specialIdInfo.newlineSpecialId, Unit, Span(i, i + 1)))
-                i++
+                yield(Pair(Token(id, Unit, Span(i, i + keyword.length)), keyword.length))
             }
 
-            specialIdInfo.intSpecialId != -1 && Character.isDigit(string[i]) -> {
-                val start = i
-
-                var n = 0
-                do {
-                    n *= 10
-                    n += string[i].digitToInt()
-                    i++
-                } while (i < string.length && Character.isDigit(string[i]))
-                result.add(Token(specialIdInfo.intSpecialId, n, Span(start, i)))
-            }
-
-            specialIdInfo.identSpecialId != -1 && identStartPredicate(string[i]) -> {
-                val start = i
-
-                val s = StringBuilder()
-                do {
-                    s.append(string[i])
-                    i++
-                } while (i < string.length && identPartPredicate(string[i]))
-                result.add(Token(specialIdInfo.identSpecialId, s.toString(), Span(start, i)))
-            }
-
-            specialIdInfo.stringSpecialId != -1 && string[i] == '"' -> {
-                val start = i
-
-                i++
-                val s = StringBuilder()
-                while (i < string.length && string[i] != '"') {
-                    s.append(string[i])
-                    i++
+            // Try specials
+            when {
+                specialIdInfo.newlineSpecialId != -1 && string[i] == '\n' -> {
+                    yield(Pair(Token(specialIdInfo.newlineSpecialId, Unit, Span(i, i + 1)), 1))
                 }
-                if (i == string.length && string[i - 1] != '"')
-                    throw SyntaxErrorException("Expected ending quote", string, Span(i, i))
-                i++
 
-                result.add(Token(specialIdInfo.stringSpecialId, s.toString(), Span(start, i)))
+                specialIdInfo.intSpecialId != -1 && Character.isDigit(string[i]) -> {
+                    val start = i
+                    var k = i
+
+                    var n = 0
+                    do {
+                        n *= 10
+                        n += string[k].digitToInt()
+                        k++
+                    } while (k < string.length && Character.isDigit(string[k]))
+                    yield(Pair(Token(specialIdInfo.intSpecialId, n, Span(start, k)), k - start))
+                }
+
+                specialIdInfo.identSpecialId != -1 && identStartPredicate(string[i]) -> {
+                    val start = i
+                    var k = i
+
+                    val s = StringBuilder()
+                    do {
+                        s.append(string[k])
+                        k++
+                    } while (k < string.length && identPartPredicate(string[k]))
+                    yield(Pair(Token(specialIdInfo.identSpecialId, s.toString(), Span(start, k)), k - start))
+                }
+
+                specialIdInfo.stringSpecialId != -1 && string[i] == '"' -> {
+                    val start = i
+                    var k = i
+
+                    k++
+                    val s = StringBuilder()
+                    while (k < string.length && string[k] != '"') {
+                        s.append(string[k])
+                        k++
+                    }
+                    if (k == string.length && string[k - 1] != '"')
+                        throw SyntaxErrorException("Expected ending quote", string, Span(k, k))
+                    k++
+
+                    yield(Pair(Token(specialIdInfo.stringSpecialId, s.toString(), Span(start, k)), k - start))
+                }
             }
-
-            else -> throw SyntaxErrorException("Unrecognized token", string, Span(i, i))
         }
+
+        val (longestToken, longestTokenLength) = possibleTokens.maxByOrNull { it.second }
+            ?: throw SyntaxErrorException("Unrecognized token", string, Span(i, i))
+
+        result.add(longestToken)
+        i += longestTokenLength
     }
     result.add(Token(specialIdInfo.eofSpecialId, Unit, Span(i, i)))
 

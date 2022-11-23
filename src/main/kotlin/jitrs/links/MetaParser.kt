@@ -8,15 +8,13 @@ import jitrs.links.tokenizer.*
  */
 fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair<Rules, RuleConstructorMap?> {
     // <string> is used for escaped tokens like . and ->
-    val language = arrayOf(".", "->", "\n", "<ident>", "<string>", "<eof>")
-
-    Scheme.sortTerminals(language)
+    val language = arrayOf(".", "->", "<nl>", "<ident>", "<string>", "<eof>")
 
     val specialIdInfo = SpecialIdInfo.from(language)
 
     val dotId: TerminalId = language.indexOf(".")
     val arrowId: TerminalId = language.indexOf("->")
-    val newLineId: TerminalId = language.indexOf("\n")
+    val newLineId: TerminalId = specialIdInfo.newlineSpecialId
     val metaIdentId: TerminalId = specialIdInfo.identSpecialId
     val metaStringId: TerminalId = specialIdInfo.stringSpecialId
     val metaEofId: TerminalId = specialIdInfo.eofSpecialId

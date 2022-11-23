@@ -49,12 +49,7 @@ class Grammar private constructor(
             identPartPredicate: (Char) -> Boolean = { false },
             debug: Boolean = true,
         ): Grammar {
-            val scheme = Scheme.new(
-                SymbolArray(
-                    terminals,
-                    nonTerminals
-                )
-            )
+            val scheme = Scheme(SymbolArray(terminals, nonTerminals))
 
             // If a container name was provided, prepare PtToCst converter
             val ptToCstEnabled = containerName != null
