@@ -38,8 +38,8 @@ fun valueToIr(value: Val, bindings: Bindings): Expression =
         is Val.Num -> Expression.IntConst(value.num)
         is Val.Var -> {
             val variableNumber = bindings.asSequence().indexOf(value.name)
-            // Compute de Bruijn index
-            Expression.Var(variableNumber + 1)
+            // De Bruijn indexes are 0-based
+            Expression.Var(variableNumber)
         }
     }
 

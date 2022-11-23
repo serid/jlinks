@@ -26,7 +26,7 @@ class Inference private constructor(
         when (expr) {
             is Expression.Var -> {
                 // Request type of variable by index
-                val sigma = bindings.asSequence().elementAt(expr.index - 1)
+                val sigma = bindings.asSequence().elementAt(expr.index)
                 instantiate(sigma)
             }
             is Expression.Application -> {
