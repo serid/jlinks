@@ -12,16 +12,18 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
 
     Scheme.sortTerminals(language)
 
+    val specialIdInfo = SpecialIdInfo.from(language)
+
     val dotId: TerminalId = language.indexOf(".")
     val arrowId: TerminalId = language.indexOf("->")
     val newLineId: TerminalId = language.indexOf("\n")
-    val metaIdentId: TerminalId = language.indexOf("<ident>")
-    val metaStringId: TerminalId = language.indexOf("<string>")
-    val metaEofId: TerminalId = language.indexOf("<eof>")
+    val metaIdentId: TerminalId = specialIdInfo.identSpecialId
+    val metaStringId: TerminalId = specialIdInfo.stringSpecialId
+    val metaEofId: TerminalId = specialIdInfo.eofSpecialId
 
     val tokens0 = tokenize(
         language,
-        SpecialIdInfo.from(language),
+        specialIdInfo,
         string,
         { it != '.' && !it.isWhitespace() }
     )
@@ -56,15 +58,18 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
 
             state = stateLhsDot
         }
+
         stateLhsDot -> when (tokenId) {
             // If token is arrow, skip to rhs
             arrowId -> {
                 ruleConstructorMap.add(null)
                 state = stateRhs
             }
+
             dotId -> state = stateLhsConstructor
             else -> throw SyntaxErrorException("Expected \".\", found ${language[tokenId]}", string, span)
         }
+
         stateLhsConstructor -> {
             if (tokenId != metaIdentId)
                 throw SyntaxErrorException("Expected <ident>, found ${language[tokenId]}", string, span)
@@ -73,12 +78,14 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
 
             state = stateArrow
         }
+
         stateArrow -> {
             // Match arrow
             if (tokenId != arrowId)
                 throw SyntaxErrorException("Expected arrow, found ${language[tokenId]}", string, span)
             state = stateRhs
         }
+
         stateRhs -> {
             if (tokenId == newLineId || tokenId == metaEofId) {
                 // Rule end
@@ -93,8 +100,11 @@ fun metaParse(scheme: Scheme, string: String, parseConstructorEh: Boolean): Pair
                 throw SyntaxErrorException("Expected <ident> or <string>, found ${language[tokenId]}", string, span)
 
             // State unchanged
-            val symbol = scheme.reverse[data] ?:
-                throw SyntaxErrorException("\"$data\" terminal or nonterminal is not in list", string, span)
+            val symbol = scheme.reverse[data] ?: throw SyntaxErrorException(
+                "\"$data\" terminal or nonterminal is not in list",
+                string,
+                span
+            )
             rhs.add(symbol)
         }
     }

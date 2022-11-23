@@ -8,7 +8,8 @@ fun tokenize(
     specialIdInfo: SpecialIdInfo,
     string: String,
     identStartPredicate: (Char) -> Boolean = { false },
-    identPartPredicate: (Char) -> Boolean = identStartPredicate
+    identPartPredicate: (Char) -> Boolean = identStartPredicate,
+    treatNewLineAsSpace: Boolean = true,
 ): Array<Token> {
     // Split terminals into "keywords" and "special"
     val keywordTerminals = terminals.asSequence()
@@ -46,10 +47,12 @@ fun tokenize(
 
         // Try specials
         when {
-            specialIdInfo.newlineSpecialId != -1 && string[i] == '\n' -> {
-                result.add(Token(specialIdInfo.newlineSpecialId, Unit, Span(i, i + 1)))
+            treatNewLineAsSpace && string[i] == '\n' -> {
+                if (specialIdInfo.newlineSpecialId != -1)
+                    result.add(Token(specialIdInfo.newlineSpecialId, Unit, Span(i, i + 1)))
                 i++
             }
+
             specialIdInfo.intSpecialId != -1 && Character.isDigit(string[i]) -> {
                 val start = i
 
@@ -61,6 +64,7 @@ fun tokenize(
                 } while (i < string.length && Character.isDigit(string[i]))
                 result.add(Token(specialIdInfo.intSpecialId, n, Span(start, i)))
             }
+
             specialIdInfo.identSpecialId != -1 && identStartPredicate(string[i]) -> {
                 val start = i
 
@@ -71,6 +75,7 @@ fun tokenize(
                 } while (i < string.length && identPartPredicate(string[i]))
                 result.add(Token(specialIdInfo.identSpecialId, s.toString(), Span(start, i)))
             }
+
             specialIdInfo.stringSpecialId != -1 && string[i] == '"' -> {
                 val start = i
 
@@ -86,6 +91,7 @@ fun tokenize(
 
                 result.add(Token(specialIdInfo.stringSpecialId, s.toString(), Span(start, i)))
             }
+
             else -> throw SyntaxErrorException("Unrecognized token", string, Span(i, i))
         }
     }
@@ -98,8 +104,16 @@ fun tokenize(
     scheme: Scheme,
     string: String,
     identStartPredicate: (Char) -> Boolean = { false },
-    identPartPredicate: (Char) -> Boolean = { false }
-): Array<Token> = tokenize(scheme.map.terminals, scheme.specialIdInfo, string, identStartPredicate, identPartPredicate)
+    identPartPredicate: (Char) -> Boolean = identStartPredicate,
+    treatNewLineAsSpace: Boolean = true,
+): Array<Token> = tokenize(
+    scheme.map.terminals,
+    scheme.specialIdInfo,
+    string,
+    identStartPredicate,
+    identPartPredicate,
+    treatNewLineAsSpace,
+)
 
 //fun lexicalAnalysis(string: String): Iterator<Span> = iterator {
 //    var i = 0
