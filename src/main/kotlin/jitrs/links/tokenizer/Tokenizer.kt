@@ -22,17 +22,27 @@ fun tokenize(
 
     val result = arrayListOf<Token>()
     var i = 0
-    outer@
     while (true) {
-        // Skip space
-        while (i < string.length && isWhitespace(string[i]))
-            i++
+        // Skip space and comments
+        while (true) {
+            if (i >= string.length)
+                break
 
-        // Skip comments
-        if (i < string.length && matchPrefix(string, i, "--")) {
-            i += 2
-            while (i < string.length && string[i] != '\n')
+            if (isWhitespace(string[i])) {
                 i++
+                continue
+            }
+
+            // Skip comments
+            if (matchPrefix(string, i, "--")) {
+                i += 2
+                while (i < string.length && string[i] != '\n')
+                    i++
+
+                continue
+            }
+
+            break
         }
 
         if (i >= string.length)
