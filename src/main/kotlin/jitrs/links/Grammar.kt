@@ -1,8 +1,6 @@
 package jitrs.links
 
-import jitrs.links.parser.AutoCst
-import jitrs.links.parser.PtToCst
-import jitrs.links.parser.parse
+import jitrs.links.parser.*
 import jitrs.links.tablegen.Rules
 import jitrs.links.tablegen.SymbolArray
 import jitrs.links.tablegen.Table
@@ -15,30 +13,25 @@ class Grammar private constructor(
     val scheme: Scheme,
     val rules: Rules,
     val table: Table,
-    private val ptToCst: PtToCst?,
+    private val reductor: LRReductor,
     private val identStartPredicate: (Char) -> Boolean,
     private val identPartPredicate: (Char) -> Boolean,
     private val debug: Boolean,
 ) {
-    fun parseMany(string: String): Array<Pt> {
+    fun parseMany(string: String): Array<AutoCst> {
         val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
-        return parse(scheme, table, rules, ArrayIterator(tokens), string, returnFirstParse = false, debug)
+        return parse(scheme, table, rules, reductor, ArrayIterator(tokens), string, returnFirstParse = false, debug)
     }
 
-    fun parseOne(string: String): Pt {
+    fun parseOne(string: String): AutoCst {
         val tokens = tokenize(scheme, string, identStartPredicate, identPartPredicate)
-        return parse(scheme, table, rules, ArrayIterator(tokens), string, returnFirstParse = true, debug)[0]
-    }
-
-    fun parseOneCst(string: String): AutoCst {
-        val pt = parseOne(string)
-        return ptToCst!!.convert(pt as Pt.Node)
+        return parse(scheme, table, rules, reductor, ArrayIterator(tokens), string, returnFirstParse = true, debug)[0]
     }
 
     companion object {
         /**
          * @param containerName Name of a Java package or Class where Cst classes reside.
-         * Required for parsing into Cst with [parseOneCst].
+         * If not provided, parser will return a stringified Cst.
          */
         fun new(
             terminals: Array<String>,
@@ -46,22 +39,22 @@ class Grammar private constructor(
             rules: String,
             containerName: String? = null,
             identStartPredicate: (Char) -> Boolean = { false },
-            identPartPredicate: (Char) -> Boolean = { false },
+            identPartPredicate: (Char) -> Boolean = identStartPredicate,
             debug: Boolean = true,
         ): Grammar {
             val scheme = Scheme(SymbolArray(terminals, nonTerminals))
 
-            // If a container name was provided, prepare PtToCst converter
-            val ptToCstEnabled = containerName != null
+            // If a container name was provided, prepare LRToCst converter
+            val toCstEnabled = containerName != null
 
-            val (rules1, ruleIdConstructorMap) = metaParse(scheme, rules, ptToCstEnabled)
+            val (rules1, ruleIdConstructorMap) = metaParse(scheme, rules, toCstEnabled)
             val table = generateTable(scheme, rules1)
 
-            val ptToCst = if (ptToCstEnabled)
-                PtToCst.new(scheme, rules1, ruleIdConstructorMap!!, containerName!!)
+            val lrReductor = if (toCstEnabled)
+                LRToCst(scheme, rules1, ruleIdConstructorMap!!, containerName!!)
             else
-                null
-            return Grammar(scheme, rules1, table, ptToCst, identStartPredicate, identPartPredicate, debug)
+                LRToString(scheme)
+            return Grammar(scheme, rules1, table, lrReductor, identStartPredicate, identPartPredicate, debug)
         }
     }
 }

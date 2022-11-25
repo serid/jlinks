@@ -13,7 +13,7 @@ internal class CalcTest {
         val grammar = Grammar.new(terminals(), nonTerminals(), rules, containerName)
 
         val s = "10 + 20 * 30 + 40"
-        val actual = sumsToExpr(grammar.parseOneCst(s) as Sums)
+        val actual = sumsToExpr(grammar.parseOne(s) as Sums)
         assertEquals(650, reduce(actual))
     }
 

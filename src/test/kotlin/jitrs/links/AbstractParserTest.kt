@@ -1,26 +1,28 @@
 package jitrs.links
 
+import jitrs.links.parser.StringCst
+import jitrs.util.cast
 import jitrs.util.myAssert
 import kotlin.test.assertEquals
 
 internal abstract class AbstractParserTest {
-    fun testParse(input: String, expectedPt: String) {
+    fun testParse(input: String, expectedStr: String) {
         val grammar = Grammar.new(terminals(), nonTerminals(), rules)
         myAssert(grammar.table.isUnambiguous)
 
-        val pt = grammar.parseOne(input)
+        val str = grammar.parseOne(input)
 
-        assertEquals(expectedPt, pt.toString(grammar.scheme))
+        assertEquals(expectedStr, str.cast<StringCst>().string)
     }
 
-    fun testParses(input: String, expectedPts: Array<String>) {
+    fun testParses(input: String, expectedStrs: Array<String>) {
         val grammar = Grammar.new(terminals(), nonTerminals(), rules)
         myAssert(!grammar.table.isUnambiguous)
 
         val pts = grammar.parseMany(input)
 
-        for ((expectedPt, pt) in expectedPts.asSequence().zip(pts.asSequence()))
-            assertEquals(expectedPt, pt.toString(grammar.scheme))
+        for ((expectedStr, str) in expectedStrs.asSequence().zip(pts.asSequence()))
+            assertEquals(expectedStr, str.cast<StringCst>().string)
     }
 
     abstract fun terminals(): Array<String>

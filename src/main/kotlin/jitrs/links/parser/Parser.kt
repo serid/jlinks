@@ -1,12 +1,12 @@
 package jitrs.links.parser
 
-import jitrs.links.Pt
 import jitrs.links.tablegen.*
 import jitrs.links.tokenizer.Scheme
 import jitrs.links.tokenizer.SyntaxErrorException
 import jitrs.links.tokenizer.Token
 import jitrs.util.ArrayIterator
 import jitrs.util.SimpleTallException
+import jitrs.util.cast
 import jitrs.util.myAssert
 
 /**
@@ -17,17 +17,18 @@ fun parse(
     scheme: Scheme,
     table: Table,
     rules: Rules,
+    reductor: LRReductor,
     tokens: ArrayIterator<Token>,
     source: String,
     returnFirstParse: Boolean,
     debug: Boolean
-): Array<Pt> {
-    val results = ArrayList<Pt>()
+): Array<AutoCst> {
+    val results = ArrayList<AutoCst>()
     val errors = ArrayList<SyntaxErrorException>()
 
     val processes: ArrayList<PProcess> = arrayListOf(
         // Initial process
-        PProcess(scheme, table, rules, tokens, debug)
+        PProcess(scheme, table, rules, reductor, tokens, debug)
     )
 
     val newProcesses = ArrayList<PProcess>()
@@ -73,23 +74,26 @@ class PProcess private constructor(
     private val scheme: Scheme, // immutable
     private val table: Table, // immutable
     private val rules: Rules, // immutable
+    private val reductor: LRReductor, // immutable
     private val tokens: ArrayIterator<Token>,
     private val debug: Boolean, // immutable
 
     private var lookahead: Token,
-    private val ptStack: ArrayList<Pt>,
+    private val treeStack: ArrayList<StackItem>,
     private val stateStack: ArrayList<StateId>,
 ) {
     constructor(
         scheme: Scheme,
         table: Table,
         rules: Rules,
+        reductor: LRReductor,
         tokens: ArrayIterator<Token>,
         debug: Boolean,
     ) : this(
         scheme,
         table,
         rules,
+        reductor,
         tokens,
         debug,
         tokens.next(),
@@ -145,16 +149,16 @@ class PProcess private constructor(
                 if (debug) {
                     myAssert(stateStack.size == 1)
                     myAssert(stateStack.last() == 0)
-                    myAssert(ptStack.size == 1)
+                    myAssert(treeStack.size == 1)
                 }
-                StepResult.Done(this.ptStack.last())
+                StepResult.Done(this.treeStack.last().cast<StackItem.Reduced>().cst)
             }
         }
 
     private fun invokeStackAction(stackAction: StackAction): SyntaxErrorException? {
         when (stackAction) {
             is StackAction.Shift -> {
-                this.ptStack.add(Pt.Leaf(this.lookahead))
+                this.treeStack.add(StackItem.Shifted(this.lookahead))
                 this.stateStack.add(stackAction.state)
                 this.lookahead = this.tokens.next()
                 return null
@@ -165,19 +169,20 @@ class PProcess private constructor(
                 val rhsLength = rule.rhs.size
 
                 // remove nodes from stack
-                val poppedNodes0 = Array<Pt?>(rhsLength) { null }
+                val poppedNodes0 = Array<StackItem?>(rhsLength) { null }
                 for (i in 0 until rhsLength) {
-                    poppedNodes0[rhsLength - i - 1] = this.ptStack.removeLast()
+                    poppedNodes0[rhsLength - i - 1] = this.treeStack.removeLast()
                     this.stateStack.removeLast() // also remove states
                 }
-                val poppedPts = poppedNodes0.requireNoNulls()
+                val poppedTrees = poppedNodes0.requireNoNulls()
 
                 // check that nodes from the stack match items expected by the rule
-                if (debug) {
-                    rule.rhs.asSequence()
-                        .zip(poppedPts.asSequence())
-                        .all { (expected, actual) -> expected.compareWithNode(actual) }
-                }
+                // TODO: maybe reenable this safety precaution
+//                if (debug) {
+//                    rule.rhs.asSequence()
+//                        .zip(poppedPts.asSequence())
+//                        .all { (expected, actual) -> expected.compareWithNode(actual) }
+//                }
 
                 // find next state using GOTO
                 val oldState = this.stateStack.last()
@@ -196,7 +201,7 @@ class PProcess private constructor(
                         span = this.lookahead.span
                     )
                 } else {
-                    this.ptStack.add(Pt.Node(lhsId, stackAction.id, poppedPts))
+                    this.treeStack.add(StackItem.Reduced(reductor.onReduce(lhsId, stackAction.id, poppedTrees)))
                     this.stateStack.add(nextState)
 
                     return null
@@ -210,10 +215,11 @@ class PProcess private constructor(
         scheme,
         table,
         rules,
+        reductor,
         tokens.clone(),
         debug,
         lookahead,
-        ptStack.clone() as ArrayList<Pt>,
+        treeStack.clone() as ArrayList<StackItem>,
         stateStack.clone() as ArrayList<StateId>
     )
 }
@@ -229,5 +235,5 @@ private fun upcastSyntaxError(error: SyntaxErrorException?, errors: ArrayList<Sy
 sealed class StepResult {
     object Pending : StepResult()
     object Error : StepResult()
-    data class Done(val result: Pt) : StepResult()
+    data class Done(val result: AutoCst) : StepResult()
 }

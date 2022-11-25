@@ -13,7 +13,7 @@ class Compiler private constructor(
     private val inference: Inference
 ) {
     fun getIr(string: String): Expression {
-        val cst = this.grammar.parseOneCst(string)
+        val cst = this.grammar.parseOne(string)
         return cstToIr(cst as Expr)
     }
 

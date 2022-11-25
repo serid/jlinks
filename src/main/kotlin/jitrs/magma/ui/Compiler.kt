@@ -42,7 +42,7 @@ class ModuleCompiler {
     private val grammar: Grammar = moduleGrammar.value
 
     fun getModule(moduleText: String): FModule {
-        val cst = this.grammar.parseOneCst(moduleText)
+        val cst = this.grammar.parseOne(moduleText)
         return GlobalScopeToModule().entry(cst as GlobalScope)
     }
 }
@@ -64,7 +64,7 @@ class ExpressionCompiler(
     }
 
     fun getIr(string: String): Expression {
-        val cst = this.grammar.parseOneCst(string)
+        val cst = this.grammar.parseOne(string)
         return ExprToIr(globals, exVars).entry(cst as Expr)
     }
 
